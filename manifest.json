@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Localhost Browser Terminal",
+  "version": "0.2.0",
+  "description": "Open a real terminal overlay on localhost pages with Ctrl+`.",
+  "permissions": ["storage"],
+  "options_page": "extension/options.html",
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "css": ["extension/vendor/xterm.css", "extension/content.css"],
+      "js": [
+        "extension/vendor/xterm.js",
+        "extension/vendor/addon-fit.js",
+        "extension/vendor/addon-web-links.js",
+        "extension/vendor/addon-unicode11.js",
+        "extension/vendor/addon-webgl.js",
+        "extension/content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["extension/assets/fonts/SymbolsNerdFontMono-Regular.woff2"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ]
+}

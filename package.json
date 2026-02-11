@@ -1,0 +1,24 @@
+{
+  "name": "terminal.browser",
+  "version": "1.0.0",
+  "description": "Chrome extension terminal overlay for localhost pages",
+  "main": "server/terminal-server.js",
+  "scripts": {
+    "server": "node server/terminal-server.js",
+    "token": "node scripts/generate-token.js",
+    "test": "node --check extension/content.js && node --check extension/options.js && node --check server/terminal-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
+    "node-pty": "^1.1.0",
+    "ws": "^8.19.0"
+  }
+}
