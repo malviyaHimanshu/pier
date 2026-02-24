@@ -6,7 +6,7 @@
   "scripts": {
     "server": "node server/terminal-server.js",
     "token": "node scripts/generate-token.js",
-    "test": "node --check extension/content.js && node --check extension/options.js && node --check server/terminal-server.js"
+    "test": "node --check extension/content.js && node --check extension/sidepanel.js && node --check extension/background.js && node --check extension/options.js && node --check server/terminal-server.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\""
   },
   "keywords": [],
   "author": "",

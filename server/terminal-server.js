@@ -1,5 +1,6 @@
 const http = require("http");
 const { spawn } = require("child_process");
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const pty = require("node-pty");
@@ -79,11 +80,37 @@ function toInt(value, fallback, min, max) {
   return Math.max(min, Math.min(max, num));
 }
 
+const SESSION_DETACH_TIMEOUT_MS = toInt(process.env.TERMINAL_BROWSER_SESSION_DETACH_TIMEOUT_MS, 300000, 1000, 86400000);
+const SESSION_ID_MAX_LENGTH = 128;
+const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+const sessions = new Map();
+
 function sendJson(ws, payload) {
   if (ws.readyState !== 1) {
     return;
   }
   ws.send(JSON.stringify(payload));
+}
+
+function normalizeSessionId(value) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+  if (raw.length > SESSION_ID_MAX_LENGTH) {
+    return null;
+  }
+  if (!SESSION_ID_PATTERN.test(raw)) {
+    return null;
+  }
+  return raw;
+}
+
+function generateSessionId() {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return crypto.randomBytes(16).toString("hex");
 }
 
 function createTerminalSession(cols, rows) {
@@ -166,6 +193,141 @@ function createTerminalSession(cols, rows) {
   }
 }
 
+function broadcastToSession(sessionRecord, payload) {
+  for (const client of sessionRecord.clients) {
+    sendJson(client, payload);
+  }
+}
+
+function stopSessionDetachTimer(sessionRecord) {
+  if (!sessionRecord.detachTimer) {
+    return;
+  }
+  clearTimeout(sessionRecord.detachTimer);
+  sessionRecord.detachTimer = null;
+}
+
+function scheduleSessionDetach(sessionRecord) {
+  stopSessionDetachTimer(sessionRecord);
+  sessionRecord.detachTimer = setTimeout(() => {
+    sessionRecord.detachTimer = null;
+    if (sessionRecord.clients.size > 0 || sessionRecord.exited) {
+      return;
+    }
+    console.log(`[terminal.browser] session idle timeout reached id=${sessionRecord.id}, terminating shell`);
+    try {
+      sessionRecord.shell.kill();
+    } catch {
+      sessions.delete(sessionRecord.id);
+    }
+  }, SESSION_DETACH_TIMEOUT_MS);
+}
+
+function teardownSession(sessionRecord) {
+  stopSessionDetachTimer(sessionRecord);
+  sessions.delete(sessionRecord.id);
+  sessionRecord.clients.clear();
+}
+
+function createManagedSession(sessionId, cols, rows) {
+  const shell = createTerminalSession(cols, rows);
+  const sessionRecord = {
+    id: sessionId,
+    shell,
+    mode: shell.mode,
+    cols,
+    rows,
+    clients: new Set(),
+    detachTimer: null,
+    exited: false
+  };
+
+  sessions.set(sessionId, sessionRecord);
+
+  shell.onOutput((data) => {
+    broadcastToSession(sessionRecord, { type: "output", data });
+  });
+
+  shell.onExit((exitCode, signal) => {
+    sessionRecord.exited = true;
+    broadcastToSession(sessionRecord, { type: "exit", exitCode, signal });
+    for (const client of sessionRecord.clients) {
+      if (client.readyState < 2) {
+        client.close();
+      }
+    }
+    teardownSession(sessionRecord);
+    console.log(`[terminal.browser] session exited id=${sessionRecord.id} code=${exitCode} signal=${signal}`);
+  });
+
+  shell.onError((error) => {
+    broadcastToSession(sessionRecord, { type: "error", message: String(error.message || error) });
+  });
+
+  return sessionRecord;
+}
+
+function attachClientToSession(sessionRecord, ws, cols, rows, reused) {
+  sessionRecord.cols = cols;
+  sessionRecord.rows = rows;
+  try {
+    sessionRecord.shell.resize(cols, rows);
+  } catch {
+    // Resize can fail transiently during process startup/teardown.
+  }
+
+  stopSessionDetachTimer(sessionRecord);
+  sessionRecord.clients.add(ws);
+  sendJson(ws, { type: "session", sessionId: sessionRecord.id, reused });
+
+  if (sessionRecord.mode === "pipe") {
+    sendJson(ws, {
+      type: "output",
+      data: "[terminal.browser] connected in fallback mode (no PTY).\\r\\n"
+    });
+  }
+
+  ws.on("message", (buffer) => {
+    let payload;
+    try {
+      payload = JSON.parse(String(buffer));
+    } catch {
+      return;
+    }
+
+    if (payload.type === "input" && typeof payload.data === "string") {
+      sessionRecord.shell.write(payload.data);
+      return;
+    }
+
+    if (payload.type === "resize") {
+      const nextCols = toInt(payload.cols, sessionRecord.cols, 20, 400);
+      const nextRows = toInt(payload.rows, sessionRecord.rows, 8, 200);
+      sessionRecord.cols = nextCols;
+      sessionRecord.rows = nextRows;
+      sessionRecord.shell.resize(nextCols, nextRows);
+    }
+  });
+
+  let detached = false;
+  const detachClient = () => {
+    if (detached) {
+      return;
+    }
+    detached = true;
+    sessionRecord.clients.delete(ws);
+    if (sessionRecord.clients.size === 0 && !sessionRecord.exited) {
+      scheduleSessionDetach(sessionRecord);
+      console.log(
+        `[terminal.browser] client detached id=${sessionRecord.id}, waiting ${SESSION_DETACH_TIMEOUT_MS}ms before cleanup`
+      );
+    }
+  };
+
+  ws.on("close", detachClient);
+  ws.on("error", detachClient);
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
@@ -217,70 +379,20 @@ server.on("upgrade", (request, socket, head) => {
 wss.on("connection", (ws, request, parsedUrl) => {
   const cols = toInt(parsedUrl.searchParams.get("cols"), 120, 20, 400);
   const rows = toInt(parsedUrl.searchParams.get("rows"), 32, 8, 200);
-
-  const session = createTerminalSession(cols, rows);
-  const remote = request.socket.remoteAddress || "unknown";
-  console.log(`[terminal.browser] session started (${remote}) ${SHELL} mode=${session.mode}`);
-
-  if (session.mode === "pipe") {
-    sendJson(ws, {
-      type: "output",
-      data: "[terminal.browser] connected in fallback mode (no PTY).\\r\\n"
-    });
+  const requestedSessionId = normalizeSessionId(parsedUrl.searchParams.get("sessionId"));
+  const sessionId = requestedSessionId || generateSessionId();
+  let sessionRecord = sessions.get(sessionId);
+  const reused = Boolean(sessionRecord);
+  if (!sessionRecord) {
+    sessionRecord = createManagedSession(sessionId, cols, rows);
   }
-
-  session.onOutput((data) => {
-    sendJson(ws, { type: "output", data });
-  });
-
-  session.onExit((exitCode, signal) => {
-    sendJson(ws, { type: "exit", exitCode, signal });
-    if (ws.readyState < 2) {
-      ws.close();
-    }
-    console.log(`[terminal.browser] session exited code=${exitCode} signal=${signal}`);
-  });
-
-  ws.on("message", (buffer) => {
-    let payload;
-    try {
-      payload = JSON.parse(String(buffer));
-    } catch {
-      return;
-    }
-
-    if (payload.type === "input" && typeof payload.data === "string") {
-      session.write(payload.data);
-      return;
-    }
-
-    if (payload.type === "resize") {
-      const nextCols = toInt(payload.cols, cols, 20, 400);
-      const nextRows = toInt(payload.rows, rows, 8, 200);
-      session.resize(nextCols, nextRows);
-      return;
-    }
-  });
-
-  session.onError((error) => {
-    sendJson(ws, { type: "error", message: String(error.message || error) });
-  });
-
-  ws.on("close", () => {
-    try {
-      session.kill();
-    } catch {
-      // no-op
-    }
-  });
-
-  ws.on("error", () => {
-    try {
-      session.kill();
-    } catch {
-      // no-op
-    }
-  });
+  const remote = request.socket.remoteAddress || "unknown";
+  if (reused) {
+    console.log(`[terminal.browser] session resumed id=${sessionId} (${remote})`);
+  } else {
+    console.log(`[terminal.browser] session started id=${sessionId} (${remote}) ${SHELL} mode=${sessionRecord.mode}`);
+  }
+  attachClientToSession(sessionRecord, ws, cols, rows, reused);
 });
 
 server.listen(PORT, HOST, () => {
@@ -297,5 +409,12 @@ server.listen(PORT, HOST, () => {
 
 process.on("SIGINT", () => {
   console.log("\n[terminal.browser] shutting down");
+  for (const sessionRecord of sessions.values()) {
+    try {
+      sessionRecord.shell.kill();
+    } catch {
+      // no-op
+    }
+  }
   server.close(() => process.exit(0));
 });

@@ -14,7 +14,7 @@
     cursorBlink: true,
     themePreset: "vscode-dark",
     macOptionIsMeta: true,
-    preferWebgl: true
+    preferWebgl: false
   };
 
   const form = document.getElementById("settings-form");
