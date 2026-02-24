@@ -1,17 +1,32 @@
 (() => {
-  const SETTINGS_KEY = "pierSettings";
-  const PANEL_HEIGHT_KEY = "pierPanelHeightPx";
-  const SESSION_ID_STORAGE_KEY = "pierSessionId";
+  const PIER_SHARED = globalThis.PierShared || null;
+  const SETTINGS_KEY =
+    (PIER_SHARED &&
+      PIER_SHARED.STORAGE_KEYS &&
+      PIER_SHARED.STORAGE_KEYS.SETTINGS) ||
+    "pierSettings";
+  const PANEL_HEIGHT_KEY =
+    (PIER_SHARED &&
+      PIER_SHARED.STORAGE_KEYS &&
+      PIER_SHARED.STORAGE_KEYS.PANEL_HEIGHT) ||
+    "pierPanelHeightPx";
+  const SESSION_ID_STORAGE_KEY =
+    (PIER_SHARED &&
+      PIER_SHARED.STORAGE_KEYS &&
+      PIER_SHARED.STORAGE_KEYS.SESSION_ID) ||
+    "pierSessionId";
   const SESSION_ID_MAX_LENGTH = 128;
   const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
   const BUNDLED_SYMBOL_FONT_FAMILY = "Pier Symbols Nerd";
   const LEGACY_DEFAULT_FONT_STACK =
+    (PIER_SHARED && PIER_SHARED.LEGACY_DEFAULT_FONT_STACK) ||
     '"JetBrainsMono Nerd Font", "MesloLGS NF", "FiraCode Nerd Font", "Hack Nerd Font", "Symbols Nerd Font Mono", Menlo, Monaco, Consolas, monospace';
   const PANEL_HEIGHT_DEFAULT_RATIO = 0.4;
   const PANEL_HEIGHT_MIN_PX = 220;
   const PANEL_HEIGHT_MAX_RATIO = 0.85;
 
-  const DEFAULT_SETTINGS = {
+  const DEFAULT_SETTINGS = (PIER_SHARED &&
+    PIER_SHARED.DEFAULT_TERMINAL_SETTINGS) || {
     wsUrl: "ws://127.0.0.1:4570/terminal",
     token: "change-me",
     fontFamily: "auto",
@@ -26,7 +41,7 @@
     preferWebgl: false
   };
 
-  const THEME_PRESETS = {
+  const THEME_PRESETS = (PIER_SHARED && PIER_SHARED.THEME_PRESETS) || {
     "vscode-dark": {
       background: "#1e1e1e",
       foreground: "#d4d4d4",
@@ -156,15 +171,30 @@
   window.addEventListener("beforeunload", closeSocket);
 
   function isLocalhostPage(locationObj) {
-    if (!locationObj || !(locationObj.protocol === "http:" || locationObj.protocol === "https:")) {
+    if (
+      !locationObj ||
+      !(locationObj.protocol === "http:" || locationObj.protocol === "https:")
+    ) {
       return false;
     }
 
     const host = locationObj.hostname;
-    return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]" || host.endsWith(".localhost");
+    if (PIER_SHARED && typeof PIER_SHARED.isLocalhostHost === "function") {
+      return PIER_SHARED.isLocalhostHost(host);
+    }
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "[::1]" ||
+      host.endsWith(".localhost")
+    );
   }
 
   function clampNumber(value, fallback, min, max) {
+    if (PIER_SHARED && typeof PIER_SHARED.clampNumber === "function") {
+      return PIER_SHARED.clampNumber(value, fallback, min, max);
+    }
     const number = Number.parseFloat(String(value));
     if (Number.isNaN(number)) {
       return fallback;
@@ -173,6 +203,9 @@
   }
 
   function normalizeSessionId(value) {
+    if (PIER_SHARED && typeof PIER_SHARED.normalizeSessionId === "function") {
+      return PIER_SHARED.normalizeSessionId(value);
+    }
     const raw = String(value || "").trim();
     if (!raw) {
       return null;
@@ -200,7 +233,9 @@
       return null;
     }
 
-    const normalized = normalizeSessionId(storage.getItem(SESSION_ID_STORAGE_KEY));
+    const normalized = normalizeSessionId(
+      storage.getItem(SESSION_ID_STORAGE_KEY)
+    );
     if (!normalized) {
       storage.removeItem(SESSION_ID_STORAGE_KEY);
       return null;
@@ -225,6 +260,9 @@
   }
 
   function normalizePanelHeight(value) {
+    if (PIER_SHARED && typeof PIER_SHARED.normalizePanelHeight === "function") {
+      return PIER_SHARED.normalizePanelHeight(value);
+    }
     const number = Number.parseFloat(String(value));
     if (!Number.isFinite(number) || number <= 0) {
       return null;
@@ -243,10 +281,15 @@
 
   function clampPanelHeightPx(value) {
     const fallback = getDefaultPanelHeightPx();
-    return Math.round(clampNumber(value, fallback, PANEL_HEIGHT_MIN_PX, getMaxPanelHeightPx()));
+    return Math.round(
+      clampNumber(value, fallback, PANEL_HEIGHT_MIN_PX, getMaxPanelHeightPx())
+    );
   }
 
   function normalizeFontFamily(value) {
+    if (PIER_SHARED && typeof PIER_SHARED.normalizeFontFamily === "function") {
+      return PIER_SHARED.normalizeFontFamily(value);
+    }
     const trimmed = String(value || "").trim();
     if (!trimmed || trimmed === LEGACY_DEFAULT_FONT_STACK) {
       return "auto";
@@ -255,27 +298,63 @@
   }
 
   function normalizeSettings(raw) {
+    if (
+      PIER_SHARED &&
+      typeof PIER_SHARED.normalizeTerminalSettings === "function"
+    ) {
+      return PIER_SHARED.normalizeTerminalSettings(raw);
+    }
     const input = raw || {};
     return {
       wsUrl: String(input.wsUrl || DEFAULT_SETTINGS.wsUrl),
       token: String(input.token || DEFAULT_SETTINGS.token),
-      fontFamily: normalizeFontFamily(input.fontFamily || DEFAULT_SETTINGS.fontFamily),
+      fontFamily: normalizeFontFamily(
+        input.fontFamily || DEFAULT_SETTINGS.fontFamily
+      ),
       fontSize: clampNumber(input.fontSize, DEFAULT_SETTINGS.fontSize, 10, 30),
-      lineHeight: clampNumber(input.lineHeight, DEFAULT_SETTINGS.lineHeight, 1, 2),
-      letterSpacing: clampNumber(input.letterSpacing, DEFAULT_SETTINGS.letterSpacing, -2, 5),
-      scrollback: Math.round(clampNumber(input.scrollback, DEFAULT_SETTINGS.scrollback, 1000, 200000)),
-      cursorStyle: ["block", "underline", "bar"].includes(input.cursorStyle) ? input.cursorStyle : DEFAULT_SETTINGS.cursorStyle,
-      cursorBlink: typeof input.cursorBlink === "boolean" ? input.cursorBlink : DEFAULT_SETTINGS.cursorBlink,
-      themePreset: ["vscode-dark", "ghostty-ink", "midnight-blue"].includes(input.themePreset)
+      lineHeight: clampNumber(
+        input.lineHeight,
+        DEFAULT_SETTINGS.lineHeight,
+        1,
+        2
+      ),
+      letterSpacing: clampNumber(
+        input.letterSpacing,
+        DEFAULT_SETTINGS.letterSpacing,
+        -2,
+        5
+      ),
+      scrollback: Math.round(
+        clampNumber(input.scrollback, DEFAULT_SETTINGS.scrollback, 1000, 200000)
+      ),
+      cursorStyle: ["block", "underline", "bar"].includes(input.cursorStyle)
+        ? input.cursorStyle
+        : DEFAULT_SETTINGS.cursorStyle,
+      cursorBlink:
+        typeof input.cursorBlink === "boolean"
+          ? input.cursorBlink
+          : DEFAULT_SETTINGS.cursorBlink,
+      themePreset: ["vscode-dark", "ghostty-ink", "midnight-blue"].includes(
+        input.themePreset
+      )
         ? input.themePreset
         : DEFAULT_SETTINGS.themePreset,
-      macOptionIsMeta: typeof input.macOptionIsMeta === "boolean" ? input.macOptionIsMeta : DEFAULT_SETTINGS.macOptionIsMeta,
-      preferWebgl: typeof input.preferWebgl === "boolean" ? input.preferWebgl : DEFAULT_SETTINGS.preferWebgl
+      macOptionIsMeta:
+        typeof input.macOptionIsMeta === "boolean"
+          ? input.macOptionIsMeta
+          : DEFAULT_SETTINGS.macOptionIsMeta,
+      preferWebgl:
+        typeof input.preferWebgl === "boolean"
+          ? input.preferWebgl
+          : DEFAULT_SETTINGS.preferWebgl
     };
   }
 
   function getTheme(settings) {
-    return THEME_PRESETS[settings.themePreset] || THEME_PRESETS[DEFAULT_SETTINGS.themePreset];
+    return (
+      THEME_PRESETS[settings.themePreset] ||
+      THEME_PRESETS[DEFAULT_SETTINGS.themePreset]
+    );
   }
 
   function formatFontFamilyName(name) {
@@ -287,10 +366,10 @@
     if (GENERIC_FONT_FAMILIES.has(lower)) {
       return lower;
     }
-    if (trimmed.startsWith("\"") || trimmed.startsWith("'")) {
+    if (trimmed.startsWith('"') || trimmed.startsWith("'")) {
       return trimmed;
     }
-    return `"${trimmed.replace(/"/g, "\\\"")}"`;
+    return `"${trimmed.replace(/"/g, '\\"')}"`;
   }
 
   function fontAvailable(name) {
@@ -319,7 +398,8 @@
   }
 
   function resolveStableFallbackParts() {
-    const installedSymbolFallback = firstAvailableFont(SYMBOL_FONT_CANDIDATES) || "Symbols Nerd Font Mono";
+    const installedSymbolFallback =
+      firstAvailableFont(SYMBOL_FONT_CANDIDATES) || "Symbols Nerd Font Mono";
     return [BUNDLED_SYMBOL_FONT_FAMILY, installedSymbolFallback, "monospace"];
   }
 
@@ -333,9 +413,11 @@
       return;
     }
 
-    fontsApi.load(`14px ${formatFontFamilyName(BUNDLED_SYMBOL_FONT_FAMILY)}`).catch(() => {
-      // Fall through to regular fallback chain if load fails.
-    });
+    fontsApi
+      .load(`14px ${formatFontFamilyName(BUNDLED_SYMBOL_FONT_FAMILY)}`)
+      .catch(() => {
+        // Fall through to regular fallback chain if load fails.
+      });
   }
 
   function buildFontStack(parts) {
@@ -496,7 +578,9 @@
         if (typeof event.stopImmediatePropagation === "function") {
           event.stopImmediatePropagation();
         }
-        disableWebglRenderer(describeWebglError(event.error || event.message || "window error"));
+        disableWebglRenderer(
+          describeWebglError(event.error || event.message || "window error")
+        );
       },
       true
     );
@@ -508,7 +592,9 @@
       if (typeof event.preventDefault === "function") {
         event.preventDefault();
       }
-      disableWebglRenderer(describeWebglError(event.reason || "unhandled rejection"));
+      disableWebglRenderer(
+        describeWebglError(event.reason || "unhandled rejection")
+      );
     });
   }
 
@@ -540,7 +626,11 @@
   }
 
   function initializeResizeObserver() {
-    if (terminalResizeObserver || typeof ResizeObserver === "undefined" || !terminalContainer) {
+    if (
+      terminalResizeObserver ||
+      typeof ResizeObserver === "undefined" ||
+      !terminalContainer
+    ) {
       return;
     }
 
@@ -575,7 +665,11 @@
         }
       }
       if (terminal.cols !== prevCols || terminal.rows !== prevRows) {
-        sendToServer({ type: "resize", cols: terminal.cols, rows: terminal.rows });
+        sendToServer({
+          type: "resize",
+          cols: terminal.cols,
+          rows: terminal.rows
+        });
       }
     });
   }
@@ -607,7 +701,9 @@
 
     try {
       await new Promise((resolve) => {
-        storageArea.set({ [PANEL_HEIGHT_KEY]: Math.round(heightPx) }, () => resolve());
+        storageArea.set({ [PANEL_HEIGHT_KEY]: Math.round(heightPx) }, () =>
+          resolve()
+        );
       });
     } catch {
       // Keep running even if persistence fails.
@@ -651,7 +747,10 @@
       event.preventDefault();
       event.stopPropagation();
 
-      const startHeight = panelHeightPx ?? panel?.getBoundingClientRect().height ?? getDefaultPanelHeightPx();
+      const startHeight =
+        panelHeightPx ??
+        panel?.getBoundingClientRect().height ??
+        getDefaultPanelHeightPx();
       resizeState = {
         pointerId: event.pointerId,
         startY: event.clientY,
@@ -696,12 +795,16 @@
       const step = event.shiftKey ? 80 : 24;
       if (event.key === "ArrowUp") {
         event.preventDefault();
-        applyPanelHeight((panelHeightPx ?? getDefaultPanelHeightPx()) + step, { persist: true });
+        applyPanelHeight((panelHeightPx ?? getDefaultPanelHeightPx()) + step, {
+          persist: true
+        });
         return;
       }
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        applyPanelHeight((panelHeightPx ?? getDefaultPanelHeightPx()) - step, { persist: true });
+        applyPanelHeight((panelHeightPx ?? getDefaultPanelHeightPx()) - step, {
+          persist: true
+        });
         return;
       }
       if (event.key === "Home") {
@@ -717,7 +820,12 @@
   }
 
   function isToggleShortcut(event) {
-    return event.code === "Backquote" && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey;
+    return (
+      event.code === "Backquote" &&
+      (event.ctrlKey || event.metaKey) &&
+      !event.altKey &&
+      !event.shiftKey
+    );
   }
 
   function onGlobalKeydown(event) {
@@ -864,11 +972,17 @@
       terminal.loadAddon(new WebLinksAddon.WebLinksAddon());
     }
 
-    if (typeof Unicode11Addon !== "undefined" && Unicode11Addon.Unicode11Addon) {
+    if (
+      typeof Unicode11Addon !== "undefined" &&
+      Unicode11Addon.Unicode11Addon
+    ) {
       try {
         const unicodeAddon = new Unicode11Addon.Unicode11Addon();
         terminal.loadAddon(unicodeAddon);
-        if (terminal.unicode && typeof terminal.unicode.activeVersion !== "undefined") {
+        if (
+          terminal.unicode &&
+          typeof terminal.unicode.activeVersion !== "undefined"
+        ) {
           terminal.unicode.activeVersion = "11";
         }
       } catch {
@@ -947,7 +1061,9 @@
         });
       }
     } catch (error) {
-      disableWebglRenderer(`WebGL unavailable: ${String(error.message || error)}`);
+      disableWebglRenderer(
+        `WebGL unavailable: ${String(error.message || error)}`
+      );
     }
   }
 
@@ -978,17 +1094,24 @@
       return;
     }
 
-    if (announcedFontStack.toLowerCase().includes(BUNDLED_SYMBOL_FONT_FAMILY.toLowerCase())) {
+    if (
+      announcedFontStack
+        .toLowerCase()
+        .includes(BUNDLED_SYMBOL_FONT_FAMILY.toLowerCase())
+    ) {
       return;
     }
 
-    const nerdCandidates = [...PRIMARY_FONT_CANDIDATES, ...SYMBOL_FONT_CANDIDATES].filter((name) =>
-      name.toLowerCase().includes("nerd")
-    );
+    const nerdCandidates = [
+      ...PRIMARY_FONT_CANDIDATES,
+      ...SYMBOL_FONT_CANDIDATES
+    ].filter((name) => name.toLowerCase().includes("nerd"));
 
     const hasNerdFont = nerdCandidates.some((name) => fontAvailable(name));
     if (!hasNerdFont) {
-      terminal.writeln("[pier] Nerd Font not detected on this system. Install one for prompt icons.");
+      terminal.writeln(
+        "[pier] Nerd Font not detected on this system. Install one for prompt icons."
+      );
       warnedNerdFont = true;
     }
   }
@@ -1024,31 +1147,59 @@
     const storageArea = getStorageArea();
     if (!storageArea) {
       if (terminal && !warnedStorageUnavailable) {
-        terminal.writeln("[pier] storage API unavailable, using default settings.");
+        terminal.writeln(
+          "[pier] storage API unavailable, using default settings."
+        );
         warnedStorageUnavailable = true;
       }
       return { ...DEFAULT_SETTINGS, panelHeight: null };
     }
 
     return new Promise((resolve) => {
-      storageArea.get([SETTINGS_KEY, PANEL_HEIGHT_KEY, "terminalBrowserSettings", "terminalBrowserPanelHeightPx"], (result) => {
-        const hasNewKey = result != null && result[SETTINGS_KEY] != null;
-        const rawSettings = hasNewKey ? result[SETTINGS_KEY] : result["terminalBrowserSettings"];
-        const rawHeight = result[PANEL_HEIGHT_KEY] != null ? result[PANEL_HEIGHT_KEY] : result["terminalBrowserPanelHeightPx"];
+      storageArea.get(
+        [
+          SETTINGS_KEY,
+          PANEL_HEIGHT_KEY,
+          "terminalBrowserSettings",
+          "terminalBrowserPanelHeightPx"
+        ],
+        (result) => {
+          const extracted =
+            PIER_SHARED &&
+            typeof PIER_SHARED.extractMigratedSettingsFromStorageResult ===
+              "function"
+              ? PIER_SHARED.extractMigratedSettingsFromStorageResult(result)
+              : null;
+          const hasNewKey = extracted
+            ? extracted.hasNewKey
+            : result != null && result[SETTINGS_KEY] != null;
+          const rawSettings = extracted
+            ? extracted.rawSettings
+            : hasNewKey
+              ? result[SETTINGS_KEY]
+              : result["terminalBrowserSettings"];
+          const rawHeight =
+            extracted &&
+            Object.prototype.hasOwnProperty.call(extracted, "rawPanelHeight")
+              ? extracted.rawPanelHeight
+              : result[PANEL_HEIGHT_KEY] != null
+                ? result[PANEL_HEIGHT_KEY]
+                : result["terminalBrowserPanelHeightPx"];
 
-        if (!hasNewKey && rawSettings != null) {
-          const toMigrate = { [SETTINGS_KEY]: rawSettings };
-          if (rawHeight != null) {
-            toMigrate[PANEL_HEIGHT_KEY] = rawHeight;
+          if (!hasNewKey && rawSettings != null) {
+            const toMigrate = { [SETTINGS_KEY]: rawSettings };
+            if (rawHeight != null) {
+              toMigrate[PANEL_HEIGHT_KEY] = rawHeight;
+            }
+            storageArea.set(toMigrate, () => {});
           }
-          storageArea.set(toMigrate, () => {});
-        }
 
-        resolve({
-          ...normalizeSettings(rawSettings),
-          panelHeight: normalizePanelHeight(rawHeight)
-        });
-      });
+          resolve({
+            ...normalizeSettings(rawSettings),
+            panelHeight: normalizePanelHeight(rawHeight)
+          });
+        }
+      );
     });
   }
 
@@ -1063,11 +1214,25 @@
   }
 
   function normalizeLocalPageHost(value) {
-    const host = String(value || "").trim().toLowerCase();
+    if (
+      PIER_SHARED &&
+      typeof PIER_SHARED.normalizeLocalhostHost === "function"
+    ) {
+      return PIER_SHARED.normalizeLocalhostHost(value);
+    }
+    const host = String(value || "")
+      .trim()
+      .toLowerCase();
     if (!host) {
       return null;
     }
-    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]" || host.endsWith(".localhost")) {
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "::1" ||
+      host === "[::1]" ||
+      host.endsWith(".localhost")
+    ) {
       return host;
     }
     return null;
@@ -1159,7 +1324,9 @@
     if (payload.type === "exit") {
       activeSessionId = saveSessionId(null);
       const exitCode = payload.exitCode;
-      terminal.writeln(`\r\n[pier] shell exited (${exitCode ?? "unknown"})\r\n`);
+      terminal.writeln(
+        `\r\n[pier] shell exited (${exitCode ?? "unknown"})\r\n`
+      );
       setStatus("exited", String(exitCode ?? "n/a"));
       return;
     }

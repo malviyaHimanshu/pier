@@ -37,7 +37,11 @@
   cursor: ns-resize;
   touch-action: none;
   position: relative;
-  background: linear-gradient(to bottom, rgba(148, 163, 184, 0.12), rgba(148, 163, 184, 0.02));
+  background: linear-gradient(
+    to bottom,
+    rgba(148, 163, 184, 0.12),
+    rgba(148, 163, 184, 0.02)
+  );
   border-bottom: 1px solid #1e293b;
 }
 

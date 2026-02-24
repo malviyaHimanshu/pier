@@ -1,166 +1,330 @@
 (() => {
-  const SETTINGS_KEY = "pierSettings";
-  const LEGACY_DEFAULT_FONT_STACK =
-    '"JetBrainsMono Nerd Font", "MesloLGS NF", "FiraCode Nerd Font", "Hack Nerd Font", "Symbols Nerd Font Mono", Menlo, Monaco, Consolas, monospace';
-  const DEFAULT_SETTINGS = {
-    wsUrl: "ws://127.0.0.1:4570/terminal",
-    token: "change-me",
-    fontFamily: "auto",
-    fontSize: 14,
-    lineHeight: 1.2,
-    letterSpacing: 0,
-    scrollback: 10000,
-    cursorStyle: "block",
-    cursorBlink: true,
-    themePreset: "vscode-dark",
-    macOptionIsMeta: true,
-    preferWebgl: false
-  };
-
-  const form = document.getElementById("settings-form");
-  const wsUrlInput = document.getElementById("ws-url");
-  const tokenInput = document.getElementById("token");
-  const fontFamilyInput = document.getElementById("font-family");
-  const fontSizeInput = document.getElementById("font-size");
-  const lineHeightInput = document.getElementById("line-height");
-  const letterSpacingInput = document.getElementById("letter-spacing");
-  const scrollbackInput = document.getElementById("scrollback");
-  const cursorStyleSelect = document.getElementById("cursor-style");
-  const themePresetSelect = document.getElementById("theme-preset");
-  const cursorBlinkInput = document.getElementById("cursor-blink");
-  const macOptionMetaInput = document.getElementById("mac-option-meta");
-  const preferWebglInput = document.getElementById("prefer-webgl");
-  const statusEl = document.getElementById("status");
-  const generateTokenButton = document.getElementById("generate-token");
-  const storageArea = getStorageArea();
-
-  function setStatus(message) {
-    statusEl.textContent = message;
-  }
-
-  function randomToken(length = 48) {
-    const bytes = new Uint8Array(Math.ceil(length / 2));
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, length);
-  }
-
-  function clampNumber(value, fallback, min, max) {
-    const number = Number.parseFloat(String(value));
-    if (Number.isNaN(number)) {
-      return fallback;
-    }
-    return Math.min(max, Math.max(min, number));
-  }
-
-  function normalizeFontFamily(value) {
-    const trimmed = String(value || "").trim();
-    if (!trimmed || trimmed === LEGACY_DEFAULT_FONT_STACK) {
-      return "auto";
-    }
-    return trimmed;
-  }
-
-  function normalizeSettings(raw) {
-    const input = raw || {};
-    return {
-      wsUrl: String(input.wsUrl || DEFAULT_SETTINGS.wsUrl),
-      token: String(input.token || DEFAULT_SETTINGS.token),
-      fontFamily: normalizeFontFamily(input.fontFamily || DEFAULT_SETTINGS.fontFamily),
-      fontSize: clampNumber(input.fontSize, DEFAULT_SETTINGS.fontSize, 10, 30),
-      lineHeight: clampNumber(input.lineHeight, DEFAULT_SETTINGS.lineHeight, 1, 2),
-      letterSpacing: clampNumber(input.letterSpacing, DEFAULT_SETTINGS.letterSpacing, -2, 5),
-      scrollback: Math.round(clampNumber(input.scrollback, DEFAULT_SETTINGS.scrollback, 1000, 200000)),
-      cursorStyle: ["block", "underline", "bar"].includes(input.cursorStyle) ? input.cursorStyle : DEFAULT_SETTINGS.cursorStyle,
-      cursorBlink: typeof input.cursorBlink === "boolean" ? input.cursorBlink : DEFAULT_SETTINGS.cursorBlink,
-      themePreset: ["vscode-dark", "ghostty-ink", "midnight-blue"].includes(input.themePreset)
-        ? input.themePreset
-        : DEFAULT_SETTINGS.themePreset,
-      macOptionIsMeta: typeof input.macOptionIsMeta === "boolean" ? input.macOptionIsMeta : DEFAULT_SETTINGS.macOptionIsMeta,
-      preferWebgl: typeof input.preferWebgl === "boolean" ? input.preferWebgl : DEFAULT_SETTINGS.preferWebgl
+  var __getOwnPropNames = Object.getOwnPropertyNames;
+  var __commonJS = (cb, mod) =>
+    function __require() {
+      return (
+        mod ||
+          (0, cb[__getOwnPropNames(cb)[0]])(
+            (mod = { exports: {} }).exports,
+            mod
+          ),
+        mod.exports
+      );
     };
-  }
 
-  function applyFormValues(settings) {
-    wsUrlInput.value = settings.wsUrl;
-    tokenInput.value = settings.token;
-    fontFamilyInput.value = settings.fontFamily;
-    fontSizeInput.value = String(settings.fontSize);
-    lineHeightInput.value = String(settings.lineHeight);
-    letterSpacingInput.value = String(settings.letterSpacing);
-    scrollbackInput.value = String(settings.scrollback);
-    cursorStyleSelect.value = settings.cursorStyle;
-    themePresetSelect.value = settings.themePreset;
-    cursorBlinkInput.checked = settings.cursorBlink;
-    macOptionMetaInput.checked = settings.macOptionIsMeta;
-    preferWebglInput.checked = settings.preferWebgl;
-  }
-
-  function readFormValues() {
-    return normalizeSettings({
-      wsUrl: wsUrlInput.value.trim(),
-      token: tokenInput.value.trim(),
-      fontFamily: fontFamilyInput.value.trim(),
-      fontSize: fontSizeInput.value,
-      lineHeight: lineHeightInput.value,
-      letterSpacing: letterSpacingInput.value,
-      scrollback: scrollbackInput.value,
-      cursorStyle: cursorStyleSelect.value,
-      cursorBlink: cursorBlinkInput.checked,
-      themePreset: themePresetSelect.value,
-      macOptionIsMeta: macOptionMetaInput.checked,
-      preferWebgl: preferWebglInput.checked
-    });
-  }
-
-  function load() {
-    if (!storageArea) {
-      applyFormValues(DEFAULT_SETTINGS);
-      setStatus("Storage API unavailable. Using defaults for this session.");
-      return;
-    }
-
-    storageArea.get([SETTINGS_KEY, "terminalBrowserSettings"], (result) => {
-      const hasNewKey = result != null && result[SETTINGS_KEY] != null;
-      const raw = hasNewKey ? result[SETTINGS_KEY] : result["terminalBrowserSettings"];
-
-      if (!hasNewKey && raw != null) {
-        storageArea.set({ [SETTINGS_KEY]: raw }, () => {});
+  // packages/extension-src/src/options/dom.js
+  var require_dom = __commonJS({
+    "packages/extension-src/src/options/dom.js"(exports, module) {
+      function qs(id) {
+        return document.getElementById(id);
       }
-
-      const settings = normalizeSettings(raw);
-      applyFormValues(settings);
-      setStatus("Loaded settings.");
-    });
-  }
-
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const settings = readFormValues();
-
-    if (!storageArea) {
-      setStatus("Storage API unavailable. Could not save.");
-      return;
+      function getDom() {
+        return {
+          form: qs("settings-form"),
+          wsUrlInput: qs("ws-url"),
+          tokenInput: qs("token"),
+          fontFamilyInput: qs("font-family"),
+          fontSizeInput: qs("font-size"),
+          lineHeightInput: qs("line-height"),
+          letterSpacingInput: qs("letter-spacing"),
+          scrollbackInput: qs("scrollback"),
+          cursorStyleSelect: qs("cursor-style"),
+          themePresetSelect: qs("theme-preset"),
+          cursorBlinkInput: qs("cursor-blink"),
+          macOptionMetaInput: qs("mac-option-meta"),
+          preferWebglInput: qs("prefer-webgl"),
+          statusEl: qs("status"),
+          generateTokenButton: qs("generate-token"),
+          testConnectionButton: qs("test-connection")
+        };
+      }
+      module.exports = {
+        getDom
+      };
     }
-
-    storageArea.set({ [SETTINGS_KEY]: settings }, () => {
-      setStatus("Saved. Reload localhost tab to apply rendering changes.");
-    });
   });
 
-  generateTokenButton.addEventListener("click", () => {
-    tokenInput.value = randomToken();
-    setStatus("Generated a new token. Save to apply.");
+  // packages/extension-src/src/options/form-bindings.js
+  var require_form_bindings = __commonJS({
+    "packages/extension-src/src/options/form-bindings.js"(exports, module) {
+      function applyFormValues(dom, settings) {
+        dom.wsUrlInput.value = settings.wsUrl;
+        dom.tokenInput.value = settings.token;
+        dom.fontFamilyInput.value = settings.fontFamily;
+        dom.fontSizeInput.value = String(settings.fontSize);
+        dom.lineHeightInput.value = String(settings.lineHeight);
+        dom.letterSpacingInput.value = String(settings.letterSpacing);
+        dom.scrollbackInput.value = String(settings.scrollback);
+        dom.cursorStyleSelect.value = settings.cursorStyle;
+        dom.themePresetSelect.value = settings.themePreset;
+        dom.cursorBlinkInput.checked = settings.cursorBlink;
+        dom.macOptionMetaInput.checked = settings.macOptionIsMeta;
+        dom.preferWebglInput.checked = settings.preferWebgl;
+      }
+      function readFormValues(dom, normalizeTerminalSettings) {
+        return normalizeTerminalSettings({
+          wsUrl: dom.wsUrlInput.value.trim(),
+          token: dom.tokenInput.value.trim(),
+          fontFamily: dom.fontFamilyInput.value.trim(),
+          fontSize: dom.fontSizeInput.value,
+          lineHeight: dom.lineHeightInput.value,
+          letterSpacing: dom.letterSpacingInput.value,
+          scrollback: dom.scrollbackInput.value,
+          cursorStyle: dom.cursorStyleSelect.value,
+          cursorBlink: dom.cursorBlinkInput.checked,
+          themePreset: dom.themePresetSelect.value,
+          macOptionIsMeta: dom.macOptionMetaInput.checked,
+          preferWebgl: dom.preferWebglInput.checked
+        });
+      }
+      module.exports = {
+        applyFormValues,
+        readFormValues
+      };
+    }
   });
 
-  load();
+  // packages/extension-src/src/options/settings-store.js
+  var require_settings_store = __commonJS({
+    "packages/extension-src/src/options/settings-store.js"(exports, module) {
+      function getStorageArea() {
+        if (typeof chrome !== "undefined" && chrome.storage) {
+          return chrome.storage.sync || chrome.storage.local || null;
+        }
+        if (typeof browser !== "undefined" && browser.storage) {
+          return browser.storage.sync || browser.storage.local || null;
+        }
+        return null;
+      }
+      function loadSettings(storageArea, shared) {
+        if (!storageArea) {
+          return Promise.resolve({
+            settings: { ...shared.DEFAULT_TERMINAL_SETTINGS },
+            migratedPayload: null,
+            error: "Storage API unavailable. Using defaults for this session."
+          });
+        }
+        return new Promise((resolve) => {
+          storageArea.get(
+            [
+              shared.STORAGE_KEYS.SETTINGS,
+              shared.STORAGE_KEYS.SETTINGS_LEGACY,
+              shared.STORAGE_KEYS.PANEL_HEIGHT,
+              shared.STORAGE_KEYS.PANEL_HEIGHT_LEGACY
+            ],
+            (result) => {
+              const migrated = shared.extractMigratedSettingsFromStorageResult(
+                result || {}
+              );
+              const migratedPayload =
+                !migrated.hasNewKey && migrated.rawSettings != null
+                  ? { [shared.STORAGE_KEYS.SETTINGS]: migrated.rawSettings }
+                  : null;
+              resolve({
+                settings: migrated.settings,
+                migratedPayload,
+                error: null
+              });
+            }
+          );
+        });
+      }
+      function saveSettings(storageArea, shared, settings) {
+        if (!storageArea) {
+          return Promise.resolve({
+            ok: false,
+            error: "Storage API unavailable. Could not save."
+          });
+        }
+        return new Promise((resolve) => {
+          storageArea.set({ [shared.STORAGE_KEYS.SETTINGS]: settings }, () => {
+            resolve({ ok: true });
+          });
+        });
+      }
+      module.exports = {
+        getStorageArea,
+        loadSettings,
+        saveSettings
+      };
+    }
+  });
 
-  function getStorageArea() {
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      return chrome.storage.sync || chrome.storage.local || null;
+  // packages/extension-src/src/options/validation.js
+  var require_validation = __commonJS({
+    "packages/extension-src/src/options/validation.js"(exports, module) {
+      function validateConnectionFields({ wsUrl, token }) {
+        if (!wsUrl) {
+          return "WebSocket URL is required.";
+        }
+        try {
+          const parsed = new URL(wsUrl);
+          if (parsed.protocol !== "ws:" && parsed.protocol !== "wss:") {
+            return "WebSocket URL must use ws:// or wss://";
+          }
+        } catch {
+          return "WebSocket URL is invalid.";
+        }
+        if (!token) {
+          return "Access token is required.";
+        }
+        return null;
+      }
+      module.exports = {
+        validateConnectionFields
+      };
     }
-    if (typeof browser !== "undefined" && browser.storage) {
-      return browser.storage.sync || browser.storage.local || null;
+  });
+
+  // packages/extension-src/src/options/token-generator.js
+  var require_token_generator = __commonJS({
+    "packages/extension-src/src/options/token-generator.js"(exports, module) {
+      function generateToken(shared) {
+        return shared.randomHexToken(48);
+      }
+      module.exports = {
+        generateToken
+      };
     }
-    return null;
-  }
+  });
+
+  // packages/extension-src/src/options/connection-test.js
+  var require_connection_test = __commonJS({
+    "packages/extension-src/src/options/connection-test.js"(exports, module) {
+      async function testConnection(wsUrl) {
+        let url;
+        try {
+          url = new URL(wsUrl);
+        } catch {
+          return { ok: false, message: "Invalid WebSocket URL." };
+        }
+        url.protocol = url.protocol === "wss:" ? "https:" : "http:";
+        url.pathname = "/health";
+        url.search = "";
+        try {
+          const response = await fetch(url.toString(), {
+            method: "GET",
+            cache: "no-store"
+          });
+          if (!response.ok) {
+            return {
+              ok: false,
+              message: `Bridge health check failed (${response.status}).`
+            };
+          }
+          const payload = await response.json().catch(() => null);
+          if (!payload || payload.ok !== true) {
+            return {
+              ok: false,
+              message: "Bridge did not return a valid health response."
+            };
+          }
+          return { ok: true, message: `Bridge reachable at ${url.host}.` };
+        } catch {
+          return {
+            ok: false,
+            message:
+              "Bridge unreachable. Start `pier setup` or `pier bridge start`."
+          };
+        }
+      }
+      module.exports = {
+        testConnection
+      };
+    }
+  });
+
+  // packages/extension-src/src/options/index.js
+  var require_index = __commonJS({
+    "packages/extension-src/src/options/index.js"() {
+      var { getDom } = require_dom();
+      var { applyFormValues, readFormValues } = require_form_bindings();
+      var { getStorageArea, loadSettings, saveSettings } =
+        require_settings_store();
+      var { validateConnectionFields } = require_validation();
+      var { generateToken } = require_token_generator();
+      var { testConnection } = require_connection_test();
+      (() => {
+        const shared = globalThis.PierShared;
+        if (!shared) {
+          throw new Error(
+            "PierShared runtime missing. Ensure extension/shared-runtime.js is loaded first."
+          );
+        }
+        const dom = getDom();
+        const storageArea = getStorageArea();
+        function setStatus(message, tone = "info") {
+          dom.statusEl.textContent = message;
+          dom.statusEl.dataset.tone = tone;
+        }
+        function validateCurrentForm() {
+          const error = validateConnectionFields({
+            wsUrl: dom.wsUrlInput.value.trim(),
+            token: dom.tokenInput.value.trim()
+          });
+          return error;
+        }
+        async function load() {
+          const result = await loadSettings(storageArea, shared);
+          applyFormValues(dom, result.settings);
+          if (result.migratedPayload && storageArea) {
+            storageArea.set(result.migratedPayload, () => {});
+          }
+          if (result.error) {
+            setStatus(result.error, "warning");
+            return;
+          }
+          setStatus("Loaded settings.", "success");
+        }
+        dom.form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          const validationError = validateCurrentForm();
+          if (validationError) {
+            setStatus(validationError, "error");
+            return;
+          }
+          const settings = readFormValues(
+            dom,
+            shared.normalizeTerminalSettings
+          );
+          const result = await saveSettings(storageArea, shared, settings);
+          if (!result.ok) {
+            setStatus(result.error, "error");
+            return;
+          }
+          setStatus(
+            "Saved. Reload localhost tabs to apply rendering changes.",
+            "success"
+          );
+        });
+        dom.generateTokenButton.addEventListener("click", () => {
+          try {
+            dom.tokenInput.value = generateToken(shared);
+            setStatus("Generated a new token. Save to apply.", "success");
+          } catch {
+            setStatus(
+              "Token generation unavailable in this browser runtime.",
+              "error"
+            );
+          }
+        });
+        if (dom.testConnectionButton) {
+          dom.testConnectionButton.addEventListener("click", async () => {
+            const validationError = validateCurrentForm();
+            if (validationError) {
+              setStatus(validationError, "error");
+              return;
+            }
+            setStatus("Testing bridge connection...", "info");
+            const result = await testConnection(dom.wsUrlInput.value.trim());
+            setStatus(result.message, result.ok ? "success" : "error");
+          });
+        }
+        load().catch((error) => {
+          setStatus(String(error.message || error), "error");
+        });
+      })();
+    }
+  });
+  require_index();
 })();

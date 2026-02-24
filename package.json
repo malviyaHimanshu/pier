@@ -1,32 +1,67 @@
 {
   "name": "pier",
   "version": "1.0.0",
-  "description": "Chrome extension terminal overlay for localhost pages",
+  "description": "Portless-powered in-browser terminals for localhost apps with per-host workspace routing",
+  "packageManager": "pnpm@10.20.0",
   "bin": {
     "pier": "bin/pier.js"
+  },
+  "exports": {
+    ".": "./server/pier-server.js",
+    "./manifest.json": "./manifest.json"
   },
   "files": [
     "bin",
     "cli",
+    "packages",
     "extension",
     "server",
     "scripts",
     "manifest.json",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "docs"
   ],
   "engines": {
     "node": ">=20"
   },
   "main": "server/pier-server.js",
   "scripts": {
+    "dev": "pnpm run build:extension --watch",
+    "build": "pnpm run build:icons && pnpm run build:extension && pnpm run build:manifest && pnpm exec prettier --write extension/options.js extension/shared-runtime.js manifest.json",
+    "build:extension": "node scripts/build-extension.js",
+    "build:manifest": "node scripts/sync-manifest.js",
+    "build:icons": "node scripts/generate-icons.js",
     "server": "node server/pier-server.js",
     "dev-hosts": "node scripts/dev-hosts.js",
     "token": "node scripts/generate-token.js",
-    "test": "node --check bin/pier.js && node --check cli/pier-utils.js && node --check cli/pier-bridge.js && node --check cli/pier-cli.js && node --check extension/content.js && node --check extension/options.js && node --check server/pier-server.js && node --check server/workspace-registry.js && node --check scripts/dev-hosts.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\""
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "test": "pnpm run test:unit && pnpm run test:smoke",
+    "test:unit": "vitest run",
+    "test:smoke": "node scripts/smoke-check.js",
+    "check": "pnpm run lint && pnpm run format:check && pnpm run test:smoke",
+    "prepack": "pnpm run build && pnpm run check"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "chrome-extension",
+    "developer-tools",
+    "terminal",
+    "localhost",
+    "portless",
+    "xterm",
+    "node-pty"
+  ],
+  "author": "Himanshu Malviya",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/himanshumalviya/pier.git"
+  },
+  "homepage": "https://github.com/himanshumalviya/pier#readme",
+  "bugs": {
+    "url": "https://github.com/himanshumalviya/pier/issues"
+  },
   "type": "commonjs",
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -36,5 +71,17 @@
     "@xterm/xterm": "^6.0.0",
     "node-pty": "^1.1.0",
     "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@changesets/cli": "^2.29.7",
+    "esbuild": "^0.25.1",
+    "eslint": "^9.21.0",
+    "eslint-config-prettier": "^10.1.1",
+    "globals": "^16.0.0",
+    "jsdom": "^26.0.0",
+    "prettier": "^3.5.2",
+    "sharp": "^0.34.3",
+    "vitest": "^3.2.4"
   }
 }
