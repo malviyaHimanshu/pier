@@ -1,12 +1,28 @@
 {
-  "name": "terminal.browser",
+  "name": "pier",
   "version": "1.0.0",
   "description": "Chrome extension terminal overlay for localhost pages",
-  "main": "server/terminal-server.js",
+  "bin": {
+    "pier": "bin/pier.js"
+  },
+  "files": [
+    "bin",
+    "cli",
+    "extension",
+    "server",
+    "scripts",
+    "manifest.json",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "server/pier-server.js",
   "scripts": {
-    "server": "node server/terminal-server.js",
+    "server": "node server/pier-server.js",
+    "dev-hosts": "node scripts/dev-hosts.js",
     "token": "node scripts/generate-token.js",
-    "test": "node --check extension/content.js && node --check extension/sidepanel.js && node --check extension/background.js && node --check extension/options.js && node --check server/terminal-server.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\""
+    "test": "node --check bin/pier.js && node --check cli/pier-utils.js && node --check cli/pier-bridge.js && node --check cli/pier-cli.js && node --check extension/content.js && node --check extension/options.js && node --check server/pier-server.js && node --check server/workspace-registry.js && node --check scripts/dev-hosts.js && node -e \"JSON.parse(require('fs').readFileSync('manifest.json','utf8'))\""
   },
   "keywords": [],
   "author": "",

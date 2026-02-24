@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Localhost Browser Terminal",
+  "name": "Pier",
   "version": "0.3.0",
   "description": "Open a real terminal in localhost pages with Ctrl+`.",
   "permissions": ["storage"],
   "action": {
-    "default_title": "Localhost Browser Terminal"
+    "default_title": "Pier"
   },
   "options_page": "extension/options.html",
   "content_scripts": [

@@ -1,12 +1,12 @@
 @font-face {
-  font-family: "Terminal Browser Symbols Nerd";
+  font-family: "Pier Symbols Nerd";
   src: url("assets/fonts/SymbolsNerdFontMono-Regular.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 
-#terminal-browser-panel {
+#pier-panel {
   position: fixed;
   left: 0;
   right: 0;
@@ -24,15 +24,15 @@
   box-sizing: border-box;
 }
 
-#terminal-browser-panel[hidden] {
+#pier-panel[hidden] {
   display: none;
 }
 
-#terminal-browser-panel.terminal-browser-is-resizing {
+#pier-panel.pier-is-resizing {
   transition: none;
 }
 
-#terminal-browser-resize-handle {
+#pier-resize-handle {
   height: 10px;
   cursor: ns-resize;
   touch-action: none;
@@ -41,7 +41,7 @@
   border-bottom: 1px solid #1e293b;
 }
 
-#terminal-browser-resize-handle::after {
+#pier-resize-handle::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -53,12 +53,12 @@
   background: rgba(148, 163, 184, 0.5);
 }
 
-#terminal-browser-resize-handle:focus-visible {
+#pier-resize-handle:focus-visible {
   outline: 2px solid #60a5fa;
   outline-offset: -2px;
 }
 
-#terminal-browser-header {
+#pier-header {
   height: 38px;
   display: flex;
   align-items: center;
@@ -71,26 +71,26 @@
   line-height: 1;
 }
 
-#terminal-browser-title {
+#pier-title {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
 }
 
-#terminal-browser-status {
+#pier-status {
   font-weight: 500;
   font-size: 12px;
   color: #9ca3af;
 }
 
-#terminal-browser-actions {
+#pier-actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-#terminal-browser-actions button {
+#pier-actions button {
   background: #1f2a44;
   border: 1px solid #33415f;
   color: #f3f4f6;
@@ -100,22 +100,22 @@
   cursor: pointer;
 }
 
-#terminal-browser-actions button:hover {
+#pier-actions button:hover {
   background: #2a3658;
 }
 
-#terminal-browser-terminal {
+#pier-terminal {
   flex: 1;
   min-height: 0;
   padding: 8px;
 }
 
-#terminal-browser-panel .xterm {
+#pier-panel .xterm {
   height: 100%;
 }
 
-html.terminal-browser-resizing,
-html.terminal-browser-resizing * {
+html.pier-resizing,
+html.pier-resizing * {
   cursor: ns-resize !important;
   user-select: none !important;
 }

@@ -1,12 +1,10 @@
 (() => {
-  const IS_EXTENSION_SIDEPANEL =
-    window.location.protocol === "chrome-extension:" && window.location.pathname.endsWith("/extension/sidepanel.html");
-  const SETTINGS_KEY = "terminalBrowserSettings";
-  const PANEL_HEIGHT_KEY = "terminalBrowserPanelHeightPx";
-  const SESSION_ID_STORAGE_KEY = "terminalBrowserSessionId";
+  const SETTINGS_KEY = "pierSettings";
+  const PANEL_HEIGHT_KEY = "pierPanelHeightPx";
+  const SESSION_ID_STORAGE_KEY = "pierSessionId";
   const SESSION_ID_MAX_LENGTH = 128;
   const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-  const BUNDLED_SYMBOL_FONT_FAMILY = "Terminal Browser Symbols Nerd";
+  const BUNDLED_SYMBOL_FONT_FAMILY = "Pier Symbols Nerd";
   const LEGACY_DEFAULT_FONT_STACK =
     '"JetBrainsMono Nerd Font", "MesloLGS NF", "FiraCode Nerd Font", "Hack Nerd Font", "Symbols Nerd Font Mono", Menlo, Monaco, Consolas, monospace';
   const PANEL_HEIGHT_DEFAULT_RATIO = 0.4;
@@ -135,7 +133,7 @@
   let webglStatus = "unknown";
   let webglRuntimeFailureHooksInstalled = false;
 
-  if (!IS_EXTENSION_SIDEPANEL && !isLocalhostPage(window.location)) {
+  if (!isLocalhostPage(window.location)) {
     return;
   }
 
@@ -154,14 +152,8 @@
   let fontWatchInitialized = false;
   let activeSessionId = loadSessionId();
 
-  if (!IS_EXTENSION_SIDEPANEL) {
-    document.addEventListener("keydown", onGlobalKeydown, true);
-  }
+  document.addEventListener("keydown", onGlobalKeydown, true);
   window.addEventListener("beforeunload", closeSocket);
-
-  if (IS_EXTENSION_SIDEPANEL) {
-    initializeSidePanel();
-  }
 
   function isLocalhostPage(locationObj) {
     if (!locationObj || !(locationObj.protocol === "http:" || locationObj.protocol === "https:")) {
@@ -384,8 +376,6 @@
     }
 
     announcedFontStack = fontFamily;
-    const source = settings.fontFamily === "auto" ? "auto" : "custom";
-    terminal.writeln(`[terminal.browser] Font profile (${source}): ${fontFamily}`);
   }
 
   function refreshTerminalMetrics(reason = "") {
@@ -461,6 +451,7 @@
       haystack.includes("webgladdon") ||
       haystack.includes("webglrenderer") ||
       haystack.includes("webgl context") ||
+      haystack.includes("task queue exceeded allotted deadline") ||
       (haystack.includes("webgl") && haystack.includes("xterm"))
     );
   }
@@ -479,8 +470,8 @@
 
     if (terminal) {
       const message = userDisabled
-        ? "[terminal.browser] WebGL renderer disabled (using default renderer)."
-        : `[terminal.browser] WebGL renderer fallback activated (${reason || "runtime error"}).`;
+        ? "[pier] WebGL renderer disabled (using default renderer)."
+        : `[pier] WebGL renderer fallback activated (${reason || "runtime error"}).`;
       terminal.writeln(message);
     }
 
@@ -499,6 +490,12 @@
         if (webglStatus !== "enabled" || !isLikelyWebglRuntimeError(event)) {
           return;
         }
+        if (typeof event.preventDefault === "function") {
+          event.preventDefault();
+        }
+        if (typeof event.stopImmediatePropagation === "function") {
+          event.stopImmediatePropagation();
+        }
         disableWebglRenderer(describeWebglError(event.error || event.message || "window error"));
       },
       true
@@ -507,6 +504,9 @@
     window.addEventListener("unhandledrejection", (event) => {
       if (webglStatus !== "enabled" || !isLikelyWebglRuntimeError(event)) {
         return;
+      }
+      if (typeof event.preventDefault === "function") {
+        event.preventDefault();
       }
       disableWebglRenderer(describeWebglError(event.reason || "unhandled rejection"));
     });
@@ -585,12 +585,12 @@
       return;
     }
 
-    const clamped = IS_EXTENSION_SIDEPANEL ? Math.max(0, Math.round(heightPx || window.innerHeight)) : clampPanelHeightPx(heightPx);
+    const clamped = clampPanelHeightPx(heightPx);
     panelHeightPx = clamped;
     panel.style.height = `${clamped}px`;
     scheduleTerminalLayoutSync();
 
-    if (persist && !IS_EXTENSION_SIDEPANEL) {
+    if (persist) {
       persistPanelHeight(clamped);
     }
   }
@@ -618,8 +618,8 @@
     if (!panel) {
       return;
     }
-    panel.classList.toggle("terminal-browser-is-resizing", active);
-    document.documentElement.classList.toggle("terminal-browser-resizing", active);
+    panel.classList.toggle("pier-is-resizing", active);
+    document.documentElement.classList.toggle("pier-resizing", active);
   }
 
   function finishResizeInteraction({ persist } = { persist: true }) {
@@ -643,10 +643,6 @@
   }
 
   function attachResizeHandleBehavior(handle) {
-    if (IS_EXTENSION_SIDEPANEL) {
-      return;
-    }
-
     handle.addEventListener("pointerdown", (event) => {
       if (event.button !== 0) {
         return;
@@ -744,25 +740,12 @@
     openPanelFlow();
   }
 
-  function initializeSidePanel() {
-    if (!panel) {
-      createPanel();
-    }
-    panel.hidden = false;
-    openPanelFlow();
-  }
-
   async function openPanelFlow() {
     const settings = await loadSettings();
-    if (IS_EXTENSION_SIDEPANEL) {
-      panelHeightPx = window.innerHeight;
-      applyPanelHeight(window.innerHeight);
-    } else {
-      if (panelHeightPx === null) {
-        panelHeightPx = settings.panelHeight ?? getDefaultPanelHeightPx();
-      }
-      applyPanelHeight(panelHeightPx);
+    if (panelHeightPx === null) {
+      panelHeightPx = settings.panelHeight ?? getDefaultPanelHeightPx();
     }
+    applyPanelHeight(panelHeightPx);
     ensureTerminal(settings);
     applyTerminalSettings(settings);
     scheduleTerminalLayoutSync();
@@ -783,11 +766,11 @@
 
   function createPanel() {
     panel = document.createElement("section");
-    panel.id = "terminal-browser-panel";
+    panel.id = "pier-panel";
     panel.hidden = true;
 
     resizeHandle = document.createElement("div");
-    resizeHandle.id = "terminal-browser-resize-handle";
+    resizeHandle.id = "pier-resize-handle";
     resizeHandle.setAttribute("role", "separator");
     resizeHandle.setAttribute("aria-orientation", "horizontal");
     resizeHandle.setAttribute("aria-label", "Resize terminal panel");
@@ -795,19 +778,19 @@
     attachResizeHandleBehavior(resizeHandle);
 
     const header = document.createElement("header");
-    header.id = "terminal-browser-header";
+    header.id = "pier-header";
 
     const title = document.createElement("div");
-    title.id = "terminal-browser-title";
+    title.id = "pier-title";
     title.textContent = "Browser Terminal";
 
     statusEl = document.createElement("span");
-    statusEl.id = "terminal-browser-status";
+    statusEl.id = "pier-status";
     setStatus("idle");
     title.appendChild(statusEl);
 
     const actions = document.createElement("div");
-    actions.id = "terminal-browser-actions";
+    actions.id = "pier-actions";
 
     actions.appendChild(
       createButton("Reconnect", async () => {
@@ -830,17 +813,14 @@
     );
     actions.appendChild(
       createButton("Close", () => {
-        if (IS_EXTENSION_SIDEPANEL) {
-          return;
-        }
         finishResizeInteraction({ persist: true });
         panel.hidden = true;
       })
     );
-    actions.lastElementChild?.setAttribute("data-terminal-browser-close", "1");
+    actions.lastElementChild?.setAttribute("data-pier-close", "1");
 
     terminalContainer = document.createElement("div");
-    terminalContainer.id = "terminal-browser-terminal";
+    terminalContainer.id = "pier-terminal";
 
     header.appendChild(title);
     header.appendChild(actions);
@@ -904,13 +884,6 @@
 
     updateWebglMode(settings.preferWebgl);
 
-    terminal.writeln(
-      IS_EXTENSION_SIDEPANEL
-        ? "[terminal.browser] Chrome Side Panel terminal ready. Use Ctrl+` (or Cmd+`) on localhost pages to reopen/focus."
-        : "[terminal.browser] Press Ctrl+` (or Cmd+`) to toggle this panel."
-    );
-    terminal.writeln("[terminal.browser] Starting connection...\r\n");
-
     maybeAnnounceFontStack(settings, effectiveFontFamily);
     maybeWarnMissingNerdFont();
 
@@ -923,9 +896,7 @@
     });
 
     window.addEventListener("resize", () => {
-      if (IS_EXTENSION_SIDEPANEL) {
-        applyPanelHeight(window.innerHeight);
-      } else if (panelHeightPx !== null) {
+      if (panelHeightPx !== null) {
         applyPanelHeight(panelHeightPx);
       } else if (panel && !panel.hidden) {
         applyPanelHeight(getDefaultPanelHeightPx());
@@ -962,7 +933,6 @@
     if (typeof WebglAddon === "undefined" || !WebglAddon.WebglAddon) {
       if (webglStatus !== "missing") {
         webglStatus = "missing";
-        terminal.writeln("[terminal.browser] WebGL addon unavailable, using default renderer.");
       }
       return;
     }
@@ -971,7 +941,6 @@
       webglAddon = new WebglAddon.WebglAddon();
       terminal.loadAddon(webglAddon);
       webglStatus = "enabled";
-      terminal.writeln("[terminal.browser] WebGL renderer enabled.");
       if (typeof webglAddon.onContextLoss === "function") {
         webglAddon.onContextLoss(() => {
           disableWebglRenderer("WebGL context lost");
@@ -1019,7 +988,7 @@
 
     const hasNerdFont = nerdCandidates.some((name) => fontAvailable(name));
     if (!hasNerdFont) {
-      terminal.writeln("[terminal.browser] Nerd Font not detected on this system. Install one for prompt icons.");
+      terminal.writeln("[pier] Nerd Font not detected on this system. Install one for prompt icons.");
       warnedNerdFont = true;
     }
   }
@@ -1055,7 +1024,7 @@
     const storageArea = getStorageArea();
     if (!storageArea) {
       if (terminal && !warnedStorageUnavailable) {
-        terminal.writeln("[terminal.browser] storage API unavailable, using default settings.");
+        terminal.writeln("[pier] storage API unavailable, using default settings.");
         warnedStorageUnavailable = true;
       }
       return { ...DEFAULT_SETTINGS, panelHeight: null };
@@ -1081,6 +1050,28 @@
     return null;
   }
 
+  function normalizeLocalPageHost(value) {
+    const host = String(value || "").trim().toLowerCase();
+    if (!host) {
+      return null;
+    }
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]" || host.endsWith(".localhost")) {
+      return host;
+    }
+    return null;
+  }
+
+  function getPageContextForServer() {
+    const host = normalizeLocalPageHost(window.location.hostname);
+    if (!host) {
+      return { host: null, url: null };
+    }
+    return {
+      host,
+      url: window.location.href
+    };
+  }
+
   async function connect(preloadedSettings) {
     if (connecting || !terminal) {
       return;
@@ -1098,13 +1089,19 @@
       if (activeSessionId) {
         wsUrl.searchParams.set("sessionId", activeSessionId);
       }
+      const pageContext = getPageContextForServer();
+      if (pageContext.host) {
+        wsUrl.searchParams.set("pageHost", pageContext.host);
+      }
+      if (pageContext.url) {
+        wsUrl.searchParams.set("pageUrl", pageContext.url);
+      }
 
       closeSocket();
       socket = new WebSocket(wsUrl.toString());
 
       socket.addEventListener("open", () => {
         setStatus("connected");
-        terminal.writeln("[terminal.browser] Connected.");
       });
 
       socket.addEventListener("message", (event) => {
@@ -1113,16 +1110,16 @@
 
       socket.addEventListener("close", () => {
         setStatus("disconnected");
-        terminal.writeln("[terminal.browser] Disconnected.");
+        terminal.writeln("[pier] Disconnected.");
       });
 
       socket.addEventListener("error", () => {
         setStatus("error", "websocket");
-        terminal.writeln("[terminal.browser] WebSocket error.");
+        terminal.writeln("[pier] WebSocket error.");
       });
     } catch (error) {
       setStatus("error", "connect failed");
-      terminal.writeln(`\r\n[terminal.browser] ${String(error.message || error)}\r\n`);
+      terminal.writeln(`\r\n[pier] ${String(error.message || error)}\r\n`);
     } finally {
       connecting = false;
     }
@@ -1150,13 +1147,13 @@
     if (payload.type === "exit") {
       activeSessionId = saveSessionId(null);
       const exitCode = payload.exitCode;
-      terminal.writeln(`\r\n[terminal.browser] shell exited (${exitCode ?? "unknown"})\r\n`);
+      terminal.writeln(`\r\n[pier] shell exited (${exitCode ?? "unknown"})\r\n`);
       setStatus("exited", String(exitCode ?? "n/a"));
       return;
     }
 
     if (payload.type === "error") {
-      terminal.writeln(`\r\n[terminal.browser] ${payload.message || "server error"}\r\n`);
+      terminal.writeln(`\r\n[pier] ${payload.message || "server error"}\r\n`);
       setStatus("error", "server");
     }
   }

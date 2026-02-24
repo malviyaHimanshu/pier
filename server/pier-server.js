@@ -5,14 +5,16 @@ const fs = require("fs");
 const path = require("path");
 const pty = require("node-pty");
 const { WebSocketServer } = require("ws");
+const { resolveWorkspaceForHost } = require("./workspace-registry");
 
-const HOST = process.env.TERMINAL_BROWSER_HOST || "127.0.0.1";
-const PORT = Number(process.env.TERMINAL_BROWSER_PORT || "4570");
-const TOKEN = process.env.TERMINAL_BROWSER_TOKEN || "change-me";
-const DEFAULT_CWD = process.env.TERMINAL_BROWSER_CWD || process.cwd();
-const SHELL = process.env.TERMINAL_BROWSER_SHELL || process.env.SHELL || (process.platform === "win32" ? "powershell.exe" : "/bin/zsh");
+const HOST = process.env.PIER_HOST || "127.0.0.1";
+const PORT = Number(process.env.PIER_PORT || "4570");
+const TOKEN = process.env.PIER_TOKEN || "change-me";
+const DEFAULT_CWD = process.env.PIER_CWD || process.cwd();
+const SHELL = process.env.PIER_SHELL || process.env.SHELL || (process.platform === "win32" ? "powershell.exe" : "/bin/zsh");
 const TERM_PROGRAM = process.env.TERM_PROGRAM || "vscode";
 const TERM_PROGRAM_VERSION = process.env.TERM_PROGRAM_VERSION || "1.96.0";
+const WORKSPACE_ROUTE_MAP_PATH = process.env.PIER_WORKSPACE_ROUTE_MAP;
 
 function getShellEnv() {
   return {
@@ -46,9 +48,9 @@ function ensurePtyHelperPermissions() {
 
     const updatedMode = stat.mode | 0o755;
     fs.chmodSync(helperPath, updatedMode);
-    console.log(`[terminal.browser] fixed execute permission on ${helperPath}`);
+    console.log(`[pier] fixed execute permission on ${helperPath}`);
   } catch (error) {
-    console.warn(`[terminal.browser] unable to auto-fix node-pty helper permissions: ${error.message}`);
+    console.warn(`[pier] unable to auto-fix node-pty helper permissions: ${error.message}`);
   }
 }
 
@@ -72,6 +74,62 @@ function isAllowedOrigin(origin) {
   }
 }
 
+function safeParseUrl(input) {
+  try {
+    return new URL(input);
+  } catch {
+    return null;
+  }
+}
+
+function normalizePageHost(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) {
+    return null;
+  }
+
+  if (isLocalhostHost(raw)) {
+    return raw;
+  }
+
+  if (raw.endsWith(":")) {
+    return null;
+  }
+
+  if (raw.includes(":") && !raw.startsWith("[") && raw !== "::1") {
+    return null;
+  }
+
+  return isLocalhostHost(raw) ? raw : null;
+}
+
+function getOriginHost(originHeader) {
+  if (!originHeader) {
+    return null;
+  }
+
+  const originUrl = safeParseUrl(originHeader);
+  if (!originUrl) {
+    return null;
+  }
+  return normalizePageHost(originUrl.hostname);
+}
+
+function getRequestedPageContext(request, parsedUrl) {
+  const pageUrlValue = parsedUrl.searchParams.get("pageUrl");
+  const pageUrl = pageUrlValue && pageUrlValue.length <= 2048 ? safeParseUrl(pageUrlValue) : null;
+  const pageHostFromUrl = pageUrl ? normalizePageHost(pageUrl.hostname) : null;
+  const pageHostFromParam = normalizePageHost(parsedUrl.searchParams.get("pageHost"));
+  const pageHostFromOrigin = getOriginHost(String(request.headers.origin || ""));
+
+  // Prefer the real page origin when available (content-script mode); otherwise accept the explicit page host (sidepanel mode).
+  const pageHost = pageHostFromOrigin || pageHostFromParam || pageHostFromUrl;
+  return {
+    pageHost,
+    pageUrl: pageUrl && pageHost ? pageUrl.toString() : null
+  };
+}
+
 function toInt(value, fallback, min, max) {
   const num = Number.parseInt(String(value), 10);
   if (Number.isNaN(num)) {
@@ -80,7 +138,7 @@ function toInt(value, fallback, min, max) {
   return Math.max(min, Math.min(max, num));
 }
 
-const SESSION_DETACH_TIMEOUT_MS = toInt(process.env.TERMINAL_BROWSER_SESSION_DETACH_TIMEOUT_MS, 300000, 1000, 86400000);
+const SESSION_DETACH_TIMEOUT_MS = toInt(process.env.PIER_SESSION_DETACH_TIMEOUT_MS, 300000, 1000, 86400000);
 const SESSION_ID_MAX_LENGTH = 128;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const sessions = new Map();
@@ -113,14 +171,49 @@ function generateSessionId() {
   return crypto.randomBytes(16).toString("hex");
 }
 
-function createTerminalSession(cols, rows) {
+function resolveSessionCwd(pageContext) {
+  const pageHost = pageContext?.pageHost || null;
+  if (!pageHost) {
+    return {
+      cwd: DEFAULT_CWD,
+      source: "default",
+      pageHost: null
+    };
+  }
+
+  try {
+    const match = resolveWorkspaceForHost(pageHost, {
+      filePath: WORKSPACE_ROUTE_MAP_PATH || undefined
+    });
+
+    if (match && match.cwd) {
+      return {
+        cwd: match.cwd,
+        source: "mapped",
+        pageHost: match.host,
+        registryPath: match.registryPath
+      };
+    }
+  } catch (error) {
+    console.warn(`[pier] failed to read workspace route map: ${error.message || error}`);
+  }
+
+  return {
+    cwd: DEFAULT_CWD,
+    source: "default",
+    pageHost
+  };
+}
+
+function createTerminalSession(cols, rows, { cwd }) {
   const shellArgs = process.platform === "win32" ? [] : ["-l"];
+  const shellCwd = cwd || DEFAULT_CWD;
 
   try {
     const ptyProcess = pty.spawn(SHELL, shellArgs, {
       cols,
       rows,
-      cwd: DEFAULT_CWD,
+      cwd: shellCwd,
       env: getShellEnv(),
       name: "xterm-256color"
     });
@@ -147,10 +240,10 @@ function createTerminalSession(cols, rows) {
       }
     };
   } catch (error) {
-    console.warn(`[terminal.browser] node-pty unavailable (${error.message}), falling back to child_process`);
+    console.warn(`[pier] node-pty unavailable (${error.message}), falling back to child_process`);
 
     const child = spawn(SHELL, shellArgs, {
-      cwd: DEFAULT_CWD,
+      cwd: shellCwd,
       env: getShellEnv(),
       stdio: "pipe"
     });
@@ -214,7 +307,7 @@ function scheduleSessionDetach(sessionRecord) {
     if (sessionRecord.clients.size > 0 || sessionRecord.exited) {
       return;
     }
-    console.log(`[terminal.browser] session idle timeout reached id=${sessionRecord.id}, terminating shell`);
+    console.log(`[pier] session idle timeout reached id=${sessionRecord.id}, terminating shell`);
     try {
       sessionRecord.shell.kill();
     } catch {
@@ -229,12 +322,14 @@ function teardownSession(sessionRecord) {
   sessionRecord.clients.clear();
 }
 
-function createManagedSession(sessionId, cols, rows) {
-  const shell = createTerminalSession(cols, rows);
+function createManagedSession(sessionId, cols, rows, { cwd, pageHost }) {
+  const shell = createTerminalSession(cols, rows, { cwd });
   const sessionRecord = {
     id: sessionId,
     shell,
     mode: shell.mode,
+    cwd: cwd || DEFAULT_CWD,
+    pageHost: pageHost || null,
     cols,
     rows,
     clients: new Set(),
@@ -257,7 +352,7 @@ function createManagedSession(sessionId, cols, rows) {
       }
     }
     teardownSession(sessionRecord);
-    console.log(`[terminal.browser] session exited id=${sessionRecord.id} code=${exitCode} signal=${signal}`);
+    console.log(`[pier] session exited id=${sessionRecord.id} code=${exitCode} signal=${signal}`);
   });
 
   shell.onError((error) => {
@@ -283,7 +378,7 @@ function attachClientToSession(sessionRecord, ws, cols, rows, reused) {
   if (sessionRecord.mode === "pipe") {
     sendJson(ws, {
       type: "output",
-      data: "[terminal.browser] connected in fallback mode (no PTY).\\r\\n"
+      data: "[pier] connected in fallback mode (no PTY).\\r\\n"
     });
   }
 
@@ -319,7 +414,7 @@ function attachClientToSession(sessionRecord, ws, cols, rows, reused) {
     if (sessionRecord.clients.size === 0 && !sessionRecord.exited) {
       scheduleSessionDetach(sessionRecord);
       console.log(
-        `[terminal.browser] client detached id=${sessionRecord.id}, waiting ${SESSION_DETACH_TIMEOUT_MS}ms before cleanup`
+        `[pier] client detached id=${sessionRecord.id}, waiting ${SESSION_DETACH_TIMEOUT_MS}ms before cleanup`
       );
     }
   };
@@ -379,36 +474,64 @@ server.on("upgrade", (request, socket, head) => {
 wss.on("connection", (ws, request, parsedUrl) => {
   const cols = toInt(parsedUrl.searchParams.get("cols"), 120, 20, 400);
   const rows = toInt(parsedUrl.searchParams.get("rows"), 32, 8, 200);
+  const pageContext = getRequestedPageContext(request, parsedUrl);
+  const sessionTarget = resolveSessionCwd(pageContext);
   const requestedSessionId = normalizeSessionId(parsedUrl.searchParams.get("sessionId"));
-  const sessionId = requestedSessionId || generateSessionId();
+  let sessionId = requestedSessionId || generateSessionId();
   let sessionRecord = sessions.get(sessionId);
-  const reused = Boolean(sessionRecord);
+  let reused = Boolean(sessionRecord);
+
+  if (sessionRecord && pageContext.pageHost && sessionRecord.pageHost && sessionRecord.pageHost !== pageContext.pageHost) {
+    console.warn(
+      `[pier] session host mismatch id=${sessionId} existing=${sessionRecord.pageHost} requested=${pageContext.pageHost}; starting new session`
+    );
+    sessionId = generateSessionId();
+    sessionRecord = null;
+    reused = false;
+  }
+
   if (!sessionRecord) {
-    sessionRecord = createManagedSession(sessionId, cols, rows);
+    sessionRecord = createManagedSession(sessionId, cols, rows, {
+      cwd: sessionTarget.cwd,
+      pageHost: sessionTarget.pageHost
+    });
   }
   const remote = request.socket.remoteAddress || "unknown";
   if (reused) {
-    console.log(`[terminal.browser] session resumed id=${sessionId} (${remote})`);
+    console.log(
+      `[pier] session resumed id=${sessionId} (${remote}) host=${sessionRecord.pageHost || "-"} cwd=${sessionRecord.cwd}`
+    );
   } else {
-    console.log(`[terminal.browser] session started id=${sessionId} (${remote}) ${SHELL} mode=${sessionRecord.mode}`);
+    const mapDetail =
+      sessionTarget.source === "mapped"
+        ? ` mappedHost=${sessionTarget.pageHost} map=${sessionTarget.registryPath || "(default)"}`
+        : pageContext.pageHost
+          ? ` pageHost=${pageContext.pageHost}`
+          : "";
+    console.log(
+      `[pier] session started id=${sessionId} (${remote}) ${SHELL} mode=${sessionRecord.mode} cwd=${sessionRecord.cwd}${mapDetail}`
+    );
   }
   attachClientToSession(sessionRecord, ws, cols, rows, reused);
 });
 
 server.listen(PORT, HOST, () => {
   ensurePtyHelperPermissions();
-  console.log("[terminal.browser] terminal bridge server started");
-  console.log(`[terminal.browser] websocket: ws://${HOST}:${PORT}/terminal`);
-  console.log(`[terminal.browser] cwd: ${DEFAULT_CWD}`);
-  console.log(`[terminal.browser] shell: ${SHELL}`);
-  console.log(`[terminal.browser] term program: ${TERM_PROGRAM} ${TERM_PROGRAM_VERSION}`);
+  console.log("[pier] terminal bridge server started");
+  console.log(`[pier] websocket: ws://${HOST}:${PORT}/terminal`);
+  console.log(`[pier] cwd: ${DEFAULT_CWD}`);
+  if (WORKSPACE_ROUTE_MAP_PATH) {
+    console.log(`[pier] workspace route map: ${WORKSPACE_ROUTE_MAP_PATH}`);
+  }
+  console.log(`[pier] shell: ${SHELL}`);
+  console.log(`[pier] term program: ${TERM_PROGRAM} ${TERM_PROGRAM_VERSION}`);
   if (TOKEN === "change-me") {
-    console.warn("[terminal.browser] WARNING: using default token 'change-me'. Set TERMINAL_BROWSER_TOKEN.");
+    console.warn("[pier] WARNING: using default token 'change-me'. Set PIER_TOKEN.");
   }
 });
 
 process.on("SIGINT", () => {
-  console.log("\n[terminal.browser] shutting down");
+  console.log("\n[pier] shutting down");
   for (const sessionRecord of sessions.values()) {
     try {
       sessionRecord.shell.kill();

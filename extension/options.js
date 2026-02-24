@@ -1,5 +1,5 @@
 (() => {
-  const SETTINGS_KEY = "terminalBrowserSettings";
+  const SETTINGS_KEY = "pierSettings";
   const LEGACY_DEFAULT_FONT_STACK =
     '"JetBrainsMono Nerd Font", "MesloLGS NF", "FiraCode Nerd Font", "Hack Nerd Font", "Symbols Nerd Font Mono", Menlo, Monaco, Consolas, monospace';
   const DEFAULT_SETTINGS = {
