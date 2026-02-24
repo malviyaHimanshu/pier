@@ -119,8 +119,15 @@
       return;
     }
 
-    storageArea.get([SETTINGS_KEY], (result) => {
-      const settings = normalizeSettings(result?.[SETTINGS_KEY]);
+    storageArea.get([SETTINGS_KEY, "terminalBrowserSettings"], (result) => {
+      const hasNewKey = result != null && result[SETTINGS_KEY] != null;
+      const raw = hasNewKey ? result[SETTINGS_KEY] : result["terminalBrowserSettings"];
+
+      if (!hasNewKey && raw != null) {
+        storageArea.set({ [SETTINGS_KEY]: raw }, () => {});
+      }
+
+      const settings = normalizeSettings(raw);
       applyFormValues(settings);
       setStatus("Loaded settings.");
     });

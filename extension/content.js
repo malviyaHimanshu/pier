@@ -1031,10 +1031,22 @@
     }
 
     return new Promise((resolve) => {
-      storageArea.get([SETTINGS_KEY, PANEL_HEIGHT_KEY], (result) => {
+      storageArea.get([SETTINGS_KEY, PANEL_HEIGHT_KEY, "terminalBrowserSettings", "terminalBrowserPanelHeightPx"], (result) => {
+        const hasNewKey = result != null && result[SETTINGS_KEY] != null;
+        const rawSettings = hasNewKey ? result[SETTINGS_KEY] : result["terminalBrowserSettings"];
+        const rawHeight = result[PANEL_HEIGHT_KEY] != null ? result[PANEL_HEIGHT_KEY] : result["terminalBrowserPanelHeightPx"];
+
+        if (!hasNewKey && rawSettings != null) {
+          const toMigrate = { [SETTINGS_KEY]: rawSettings };
+          if (rawHeight != null) {
+            toMigrate[PANEL_HEIGHT_KEY] = rawHeight;
+          }
+          storageArea.set(toMigrate, () => {});
+        }
+
         resolve({
-          ...normalizeSettings(result?.[SETTINGS_KEY]),
-          panelHeight: normalizePanelHeight(result?.[PANEL_HEIGHT_KEY])
+          ...normalizeSettings(rawSettings),
+          panelHeight: normalizePanelHeight(rawHeight)
         });
       });
     });
