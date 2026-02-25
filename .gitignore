@@ -1,5 +1,6 @@
 node_modules/
 *.log
+*.tgz
 .DS_Store
 *.tsbuildinfo
 packages/*/dist/
@@ -10,3 +11,4 @@ extension/options.html
 extension/manifest.json
 extension/vendor/*.js
 extension/vendor/xterm.css
+artifacts/

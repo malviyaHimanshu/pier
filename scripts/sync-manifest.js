@@ -3,6 +3,15 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
+const LOCAL_PAGE_MATCHES = [
+  "http://localhost/*",
+  "https://localhost/*",
+  "http://127.0.0.1/*",
+  "https://127.0.0.1/*",
+  "http://*.localhost/*",
+  "https://*.localhost/*"
+];
+const MINIMUM_CHROME_VERSION = "114";
 const pkg = JSON.parse(
   fs.readFileSync(path.join(root, "package.json"), "utf8")
 );
@@ -13,6 +22,7 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 manifest.version = pkg.version;
 manifest.name = "Pier";
 manifest.description = "Open a real terminal in localhost pages with Ctrl+`.";
+manifest.minimum_chrome_version = MINIMUM_CHROME_VERSION;
 manifest.action = {
   ...(manifest.action || {}),
   default_title: "Pier",
@@ -46,6 +56,7 @@ for (const script of scripts) {
 
   const desiredJs = ["extension/shared-runtime.js", "extension/content.js"];
   script.js = desiredJs;
+  script.matches = [...LOCAL_PAGE_MATCHES];
 
   if (Array.isArray(script.css)) {
     script.css = Array.from(
@@ -56,6 +67,14 @@ for (const script of scripts) {
       ])
     );
     script.css = ["extension/vendor/xterm.css", "extension/content.css"];
+  }
+}
+
+if (Array.isArray(manifest.web_accessible_resources)) {
+  for (const resource of manifest.web_accessible_resources) {
+    if (Array.isArray(resource.matches)) {
+      resource.matches = [...LOCAL_PAGE_MATCHES];
+    }
   }
 }
 

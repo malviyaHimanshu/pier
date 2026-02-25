@@ -5,18 +5,33 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const root = path.resolve(__dirname, "..");
+const pkg = JSON.parse(
+  fs.readFileSync(path.join(root, "package.json"), "utf8")
+);
+
+function expectedTarballPrefix() {
+  return String(pkg.name || "")
+    .trim()
+    .replace(/^@/, "")
+    .replace(/\//g, "-");
+}
 
 function latestTarball() {
+  const tarballPrefix = expectedTarballPrefix();
   const candidates = fs
     .readdirSync(root)
-    .filter((name) => /^pier-.*\.tgz$/.test(name))
+    .filter(
+      (name) => name.startsWith(`${tarballPrefix}-`) && name.endsWith(".tgz")
+    )
     .map((name) => ({
       name,
       mtimeMs: fs.statSync(path.join(root, name)).mtimeMs
     }))
     .sort((a, b) => b.mtimeMs - a.mtimeMs);
   if (candidates.length === 0) {
-    throw new Error("No pier-*.tgz found. Run `pnpm pack` first.");
+    throw new Error(
+      `No ${tarballPrefix}-*.tgz found. Run \`pnpm run pack:npm\` (or \`pnpm pack\`) first.`
+    );
   }
   return path.join(root, candidates[0].name);
 }

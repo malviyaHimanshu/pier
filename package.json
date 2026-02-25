@@ -1,6 +1,6 @@
 {
-  "name": "pier",
-  "version": "1.0.0",
+  "name": "@malviyahimanshu/pier",
+  "version": "1.0.1",
   "description": "Portless-powered in-browser terminals for localhost apps with per-host workspace routing",
   "packageManager": "pnpm@10.20.0",
   "bin": {
@@ -15,15 +15,12 @@
     "cli",
     "extension",
     "server",
-    "scripts",
     "packages/shared/dist",
     "packages/shared/package.json",
     "packages/cli-core/dist",
     "packages/cli-core/package.json",
     "packages/bridge-core/dist",
     "packages/bridge-core/package.json",
-    "packages/extension-src/src",
-    "packages/extension-src/package.json",
     "manifest.json",
     "README.md",
     "LICENSE",
@@ -40,8 +37,15 @@
     "build:extension": "node scripts/build-extension.js",
     "build:manifest": "node scripts/sync-manifest.js && pnpm exec prettier --write manifest.json",
     "build:icons": "node scripts/generate-icons.js",
+    "pack:extension": "pnpm run build && node scripts/package-extension.js",
+    "pack:npm": "npm pack --ignore-scripts",
     "server": "node server/pier-server.js",
     "dev-hosts": "node scripts/dev-hosts.js",
+    "site:dev": "pnpm --filter @pier/site dev",
+    "site:build": "pnpm --filter @pier/site build",
+    "site:start": "pnpm --filter @pier/site start",
+    "site:lint": "pnpm --filter @pier/site lint",
+    "site:typecheck": "pnpm --filter @pier/site typecheck",
     "token": "node scripts/generate-token.js",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
@@ -51,6 +55,8 @@
     "test:smoke": "node scripts/smoke-check.js",
     "test:pack-smoke": "node scripts/pack-smoke.js",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run format:check && pnpm run test",
+    "release:artifacts": "pnpm run build && pnpm run check && pnpm run pack:npm && pnpm run test:pack-smoke && node scripts/package-extension.js",
+    "release:npm:dry-run": "pnpm run build && pnpm run check && npm publish --dry-run --access public",
     "prepack": "pnpm run build && pnpm run check"
   },
   "keywords": [
@@ -66,11 +72,14 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/himanshumalviya/pier.git"
+    "url": "git+https://github.com/malviyahimanshu/pier.git"
   },
-  "homepage": "https://github.com/himanshumalviya/pier#readme",
+  "homepage": "https://github.com/malviyahimanshu/pier#readme",
   "bugs": {
-    "url": "https://github.com/himanshumalviya/pier/issues"
+    "url": "https://github.com/malviyahimanshu/pier/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "commonjs",
   "dependencies": {

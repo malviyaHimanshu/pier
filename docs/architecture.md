@@ -31,6 +31,6 @@
 
 ## Packaging Model
 
-- Published package is still a single `pier` package
+- Published package is a single npm package (`@malviyahimanshu/pier`) with the `pier` CLI binary
 - Internal packages remain implementation details
 - `prepack` runs build + checks so the published tarball includes generated extension output and compiled `dist/` files

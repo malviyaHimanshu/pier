@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Pier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Open a real terminal in localhost pages with Ctrl+`.",
+  "minimum_chrome_version": "114",
   "permissions": ["storage"],
   "action": {
     "default_title": "Pier",
@@ -20,7 +21,14 @@
   "options_page": "extension/options.html",
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
+      "matches": [
+        "http://localhost/*",
+        "https://localhost/*",
+        "http://127.0.0.1/*",
+        "https://127.0.0.1/*",
+        "http://*.localhost/*",
+        "https://*.localhost/*"
+      ],
       "css": ["extension/vendor/xterm.css", "extension/content.css"],
       "js": ["extension/shared-runtime.js", "extension/content.js"],
       "run_at": "document_idle"
@@ -29,7 +37,14 @@
   "web_accessible_resources": [
     {
       "resources": ["extension/assets/fonts/SymbolsNerdFontMono-Regular.woff2"],
-      "matches": ["http://*/*", "https://*/*"]
+      "matches": [
+        "http://localhost/*",
+        "https://localhost/*",
+        "http://127.0.0.1/*",
+        "https://127.0.0.1/*",
+        "http://*.localhost/*",
+        "https://*.localhost/*"
+      ]
     }
   ]
 }

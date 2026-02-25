@@ -39,7 +39,7 @@ Pier keeps each project self-contained in one browser tab:
 Install:
 
 ```bash
-npm install -g portless pier
+npm install -g portless @malviyahimanshu/pier
 ```
 
 ### First-Time Setup

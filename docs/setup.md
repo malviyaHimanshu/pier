@@ -3,7 +3,7 @@
 ## Install (Published Package)
 
 ```bash
-npm install -g portless pier
+npm install -g portless @malviyahimanshu/pier
 ```
 
 ## Initialize Pier
