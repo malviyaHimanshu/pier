@@ -1,19 +1,36 @@
 # Architecture
 
-## Flow
+## Runtime Flow
 
-1. `pier <name> <cmd...>` wraps `portless` and stores `<name>.localhost -> cwd`
-2. CLI ensures local bridge is running (`node-pty` / fallback shell pipes)
-3. Chrome extension content script activates only on localhost pages
-4. Content script opens a WebSocket to `/terminal` with token + page context
-5. Bridge resolves the page hostname to a mapped workspace directory
-6. Terminal session is created/reused and streamed into xterm.js in-page
+1. `pier <name> <cmd...>` wraps `portless` and records `<name>.localhost -> cwd`
+2. CLI ensures the bridge process is running
+3. Extension content script activates only on localhost-style pages
+4. Content script opens WebSocket `/terminal` with token + page context
+5. Bridge resolves the page hostname using the workspace registry
+6. Bridge creates/reuses shell session (`node-pty`, with pipe fallback)
+7. xterm.js renders terminal output in-page
 
-## Repo layout (high-level)
+## Repository Structure
 
-- `bin/`, `cli/`, `server/`: compatibility entrypoints
-- `packages/shared`: shared schema/validation/runtime helpers
-- `packages/cli-core`: CLI implementation and workspace registry
-- `packages/bridge-core`: bridge server implementation
-- `packages/extension-src`: source for extension-generated assets (options/shared runtime)
-- `extension/`: unpacked extension assets loaded by Chrome
+- `packages/shared` (TS): shared constants, settings normalization, WS protocol helpers
+- `packages/cli-core` (TS -> `dist/`): CLI commands, config store, workspace routing registry
+- `packages/bridge-core` (TS -> `dist/`): bridge HTTP/WebSocket server and shell session management
+- `packages/extension-src` (TS/TSX): extension source code and static public assets
+- `extension/` (generated): unpacked extension output built from `packages/extension-src`
+- `cli/`, `server/`, `bin/` (JS shims): compatibility entrypoints that load compiled `dist/`
+
+## Extension Build Pipeline
+
+`pnpm run build:extension` performs:
+
+- bundle `shared-runtime.ts` -> `extension/shared-runtime.js`
+- bundle content script TS source -> `extension/content.js`
+- bundle options UI TSX source -> `extension/options.js`
+- copy static extension assets (`options.html`, CSS, `xterm.css`) into `extension/`
+- remove stale vendored JS outputs
+
+## Packaging Model
+
+- Published package is still a single `pier` package
+- Internal packages remain implementation details
+- `prepack` runs build + checks so the published tarball includes generated extension output and compiled `dist/` files

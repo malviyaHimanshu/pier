@@ -1,7 +1,7 @@
 const {
   extractMigratedSettingsFromStorageResult,
   normalizeTerminalSettings
-} = require("../../packages/shared/src");
+} = require("../../packages/shared/dist");
 
 describe("terminal settings normalization", () => {
   it("clamps values and validates enums", () => {

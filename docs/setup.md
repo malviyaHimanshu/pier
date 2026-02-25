@@ -1,43 +1,49 @@
 # Setup
 
-## Install (published package)
+## Install (Published Package)
 
 ```bash
 npm install -g portless pier
 ```
 
-## Initialize bridge and token
+## Initialize Pier
 
 ```bash
 pier setup
 ```
 
-`pier setup` prints:
+`pier setup` will:
 
-- WebSocket URL
-- token
-- next steps
+- create `~/.pier/config.json` (if missing)
+- start the local bridge server
+- print the WebSocket URL and token for the extension
 
-## Find the extension folder
+## Load the Chrome/Chromium Extension
+
+1. Run:
 
 ```bash
 pier extension path
 ```
 
-Load that folder via `chrome://extensions` -> **Load unpacked**.
+2. Open `chrome://extensions`
+3. Enable **Developer mode**
+4. Click **Load unpacked**
+5. Select the printed directory
 
-## Configure extension options
+## Configure Extension Settings
 
 Open **Pier Settings** and paste:
 
 - WebSocket URL
 - Access Token
 
-Use **Test Bridge** to confirm the local bridge is reachable before opening localhost pages.
+Use **Test Bridge** before opening localhost pages.
 
-## First-run validation
+## First-Run Validation
 
-1. Run `pier bridge status` and confirm `running`.
-2. Start an app with `pier myapp pnpm dev`.
-3. Open `http://myapp.localhost:<port>`.
-4. Press `Ctrl+\`` / `Cmd+\`` and confirm the terminal opens in the correct project directory.
+1. `pier bridge status` should report `running`
+2. Start an app: `pier myapp pnpm dev`
+3. Open `http://myapp.localhost:<port>`
+4. Press `Cmd+\`` / `Ctrl+\``
+5. Confirm the terminal opens in the correct project directory

@@ -22,15 +22,7 @@
     {
       "matches": ["http://*/*", "https://*/*"],
       "css": ["extension/vendor/xterm.css", "extension/content.css"],
-      "js": [
-        "extension/vendor/xterm.js",
-        "extension/vendor/addon-fit.js",
-        "extension/vendor/addon-web-links.js",
-        "extension/vendor/addon-unicode11.js",
-        "extension/vendor/addon-webgl.js",
-        "extension/shared-runtime.js",
-        "extension/content.js"
-      ],
+      "js": ["extension/shared-runtime.js", "extension/content.js"],
       "run_at": "document_idle"
     }
   ],

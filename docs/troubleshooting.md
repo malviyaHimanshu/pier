@@ -1,33 +1,59 @@
 # Troubleshooting
 
-## `portless` not found
+## `portless` Not Found
 
-Install it globally:
+Symptom:
+
+- `pier` fails to start app command and mentions `portless`
+
+Fix:
 
 ```bash
 npm install -g portless
 ```
 
-## Bridge unreachable in extension settings
+## Bridge Unreachable in Extension
 
-- Run `pier bridge status`
-- Run `pier bridge start`
-- Confirm the WebSocket URL uses the same host/port as the bridge status output
+Checks:
 
-## Token mismatch / unauthorized WebSocket
+1. `pier bridge status`
+2. `pier doctor`
+3. Confirm extension WebSocket URL + token match `pier setup` / `pier doctor`
+4. Use **Test Bridge** in extension settings
 
-- Re-run `pier setup` or inspect `pier doctor`
-- Copy the exact token into Pier Settings
+## Token Errors / Authentication Failures
 
-## PTY unavailable / fallback mode message
+- Regenerate or re-read the token from `pier doctor`
+- Re-paste in extension settings
+- Reload localhost tabs after saving settings
 
-Pier will fall back to `child_process` pipes when PTY creation fails. Interactive behavior may be reduced.
+## Terminal Opens in Wrong Directory
 
-## Terminal opens in wrong directory
-
-Check mappings:
+Inspect mappings:
 
 ```bash
 pier map list
-pier map where <host.localhost>
+pier map where myapp.localhost
 ```
+
+Re-add mapping if needed:
+
+```bash
+pier map add myapp.localhost /correct/path
+```
+
+## `node-pty` / Terminal Spawn Issues
+
+Pier falls back to `child_process` pipes when PTY initialization fails, but interactive behavior may be reduced.
+
+Checks:
+
+- `pier bridge logs`
+- `pier doctor`
+- confirm shell path in config (`bridge.shell`) is valid
+
+## Extension Loads But Shortcut Does Nothing
+
+- Confirm page is `localhost`, `127.0.0.1`, `::1`, or `*.localhost`
+- Check extension is enabled
+- Reload the page after updating extension settings

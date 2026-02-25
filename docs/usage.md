@@ -1,36 +1,56 @@
 # Usage
 
-## Start a mapped app
+## Start an App with Portless + Pier Mapping
 
-From the project directory:
+From the project directory you want the terminal to use:
 
 ```bash
 pier myapp pnpm dev
 ```
 
-Pier will:
+This will:
 
-- ensure the bridge is running
-- map `myapp.localhost` to the current working directory
+- register `myapp.localhost -> current cwd`
+- ensure the Pier bridge is running
 - run `portless myapp pnpm dev`
 
-## Multiple apps in parallel
-
-Run each app in its own repo directory:
+## Multiple Apps in Parallel
 
 ```bash
-pier api.myapp pnpm dev
-pier web.myapp pnpm dev
-pier admin.myapp pnpm dev
+pier web pnpm dev
+pier api pnpm dev
+pier admin pnpm dev
 ```
 
-Each `.localhost` hostname gets its own workspace mapping, so the in-page terminal opens in the right repo.
+Each app gets:
 
-## Manage workspace route mappings
+- its own `*.localhost` hostname
+- separate browser storage isolation (via portless)
+- a Pier terminal rooted in the mapped repo directory
+
+## Mapping Commands
 
 ```bash
 pier map list
-pier map add api.myapp.localhost /absolute/path/to/api
-pier map where api.myapp.localhost
-pier map remove api.myapp.localhost
+pier map add docs.localhost /path/to/docs-repo
+pier map remove docs.localhost
+pier map where docs.localhost
 ```
+
+## Bridge Commands
+
+```bash
+pier bridge start
+pier bridge start --foreground
+pier bridge stop
+pier bridge status
+pier bridge logs
+```
+
+## Diagnostics
+
+```bash
+pier doctor
+```
+
+`pier doctor` prints bridge state, config paths, and extension connection values.

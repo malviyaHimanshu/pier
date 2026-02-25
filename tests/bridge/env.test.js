@@ -1,7 +1,7 @@
 const {
   readBridgeEnv,
   toInt
-} = require("../../packages/bridge-core/src/config/env");
+} = require("../../packages/bridge-core/dist/config/env");
 
 describe("bridge env", () => {
   it("clamps numeric values with toInt", () => {

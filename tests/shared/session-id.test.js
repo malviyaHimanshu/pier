@@ -1,4 +1,4 @@
-const { normalizeSessionId } = require("../../packages/shared/src");
+const { normalizeSessionId } = require("../../packages/shared/dist");
 
 describe("normalizeSessionId", () => {
   it("accepts valid ids", () => {

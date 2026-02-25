@@ -6,7 +6,7 @@ const {
   readRegistry,
   removeRoute,
   upsertRoute
-} = require("../../packages/cli-core/src/workspace-registry/registry");
+} = require("../../packages/cli-core/dist/workspace-registry/registry");
 
 const tmpDirs = [];
 function makeTmpDir() {

@@ -1,1 +1,1 @@
-module.exports = require("../packages/cli-core/src/workspace-registry/registry");
+module.exports = require("../packages/cli-core/dist/workspace-registry/registry");

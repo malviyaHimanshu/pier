@@ -1,7 +1,7 @@
 const {
   getExtensionPath,
   parseNameToHost
-} = require("../../packages/cli-core/src");
+} = require("../../packages/cli-core/dist");
 
 describe("cli core helpers", () => {
   it("prints extension path under repo extension directory", () => {

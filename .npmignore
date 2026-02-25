@@ -1,0 +1,16 @@
+*.tgz
+*.tsbuildinfo
+
+packages/*/src/
+packages/*/tsconfig.json
+packages/*/tsconfig.tsbuildinfo
+
+packages/extension-src/src/
+packages/extension-src/tsconfig.json
+
+tests/
+.github/
+.changeset/
+
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md

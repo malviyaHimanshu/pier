@@ -1,1 +1,1 @@
-module.exports = require("../packages/bridge-core/src/main");
+module.exports = require("../packages/bridge-core/dist/main");

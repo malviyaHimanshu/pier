@@ -2,7 +2,7 @@ const {
   getRequestedPageContext,
   isAllowedOrigin,
   normalizePageHost
-} = require("../../packages/bridge-core/src/security/origin-policy");
+} = require("../../packages/bridge-core/dist/security/origin-policy");
 
 describe("origin policy", () => {
   it("accepts localhost and extension origins", () => {

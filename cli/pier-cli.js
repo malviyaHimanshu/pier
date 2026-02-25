@@ -1,1 +1,1 @@
-module.exports = require("../packages/cli-core/src");
+module.exports = require("../packages/cli-core/dist");

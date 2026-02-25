@@ -7,24 +7,33 @@
 - Chrome/Chromium for extension testing
 - `portless` installed globally for end-to-end workflows
 
-## Local dev loop
+## Source of Truth vs Generated Output
+
+- Author extension code in `packages/extension-src`
+- Do not edit files in `extension/` directly
+- `extension/` is generated build output (ignored in git)
+- Node package runtime output lives in `packages/*/dist` (ignored in git)
+
+## Local Setup
 
 ```bash
 pnpm install
-pnpm run build:extension
-pnpm run build:manifest
-pnpm run test
+pnpm run build
 pnpm run check
 ```
 
-## Key commands
+## Common Commands
 
-- `pnpm run build`: generate icons + extension bundles + sync manifest
-- `pnpm run test`: unit tests + smoke checks
-- `pnpm run check`: lint + format check + smoke checks
+- `pnpm run build` - compile TS packages + generate extension assets + sync manifest
+- `pnpm run typecheck` - TypeScript project checks
+- `pnpm run lint` - ESLint across JS/TS/TSX
+- `pnpm run test:unit` - package build + Vitest suite
+- `pnpm run test:smoke` - smoke validation for built assets and CLI shims
+- `pnpm run test:pack-smoke` - tarball install smoke test (run after `pnpm pack`)
 
-## Compatibility expectations
+## Contribution Expectations
 
-- Preserve existing CLI commands and flags
-- Preserve registry file format compatibility
+- Preserve CLI command and flag compatibility for `v1.x`
+- Preserve config and workspace registry format compatibility
 - Preserve extension storage key migration behavior
+- Keep PRs focused and include tests for behavior changes

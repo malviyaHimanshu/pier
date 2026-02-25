@@ -1,1 +1,1 @@
-module.exports = require("../packages/cli-core/src/bridge/bridge-process");
+module.exports = require("../packages/cli-core/dist/bridge/bridge-process");
