@@ -12,8 +12,12 @@ export const metadata: Metadata = {
 export default function ConfigurationDocsPage() {
   return (
     <DocsPageShell slug="configuration">
-      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">State Directory</h2>
-      <p className="text-neutral-600 leading-relaxed">Pier stores local state in:</p>
+      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        State Directory
+      </h2>
+      <p className="text-neutral-600 leading-relaxed">
+        Pier stores local state in:
+      </p>
       <ul className="list-disc pl-5 space-y-2 text-neutral-600">
         <li>
           <InlineCode>~/.pier/config.json</InlineCode>
@@ -25,7 +29,8 @@ export default function ConfigurationDocsPage() {
           <InlineCode>~/.pier/bridge.log</InlineCode>
         </li>
         <li>
-          <InlineCode>~/.pier/workspace-routes.json</InlineCode> (default mapping registry)
+          <InlineCode>~/.pier/workspace-routes.json</InlineCode> (default
+          mapping registry)
         </li>
       </ul>
 
@@ -35,7 +40,9 @@ export default function ConfigurationDocsPage() {
       <p className="text-neutral-600 leading-relaxed">
         Pier normalizes and maintains this file automatically.
       </p>
-      <p className="text-neutral-600 leading-relaxed">High-level shape includes:</p>
+      <p className="text-neutral-600 leading-relaxed">
+        High-level shape includes:
+      </p>
       <ul className="list-disc pl-5 space-y-2 text-neutral-600">
         <li>version</li>
         <li>createdAt</li>
@@ -51,7 +58,9 @@ export default function ConfigurationDocsPage() {
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Environment Variables (Bridge)
       </h2>
-      <p className="text-neutral-600 leading-relaxed">Bridge runtime consumes:</p>
+      <p className="text-neutral-600 leading-relaxed">
+        Bridge runtime consumes:
+      </p>
       <ul className="list-disc pl-5 space-y-2 text-neutral-600">
         <li>
           <InlineCode>PIER_HOST</InlineCode>
@@ -80,10 +89,12 @@ export default function ConfigurationDocsPage() {
         Extension Settings
       </h2>
       <p className="text-neutral-600 leading-relaxed">
-        Pier stores terminal rendering and connection settings in extension storage keys.
+        Pier stores terminal rendering and connection settings in extension
+        storage keys.
       </p>
       <p className="text-neutral-600 leading-relaxed">
-        Compatibility note: older storage keys are migrated automatically on load.
+        Compatibility note: older storage keys are migrated automatically on
+        load.
       </p>
     </DocsPageShell>
   );

@@ -47,7 +47,7 @@ export function ensurePostHogInitialized(): boolean {
     capture_pageview: false,
     capture_pageleave: false,
     disable_session_recording: true,
-    person_profiles: "never",
+    person_profiles: "never"
   });
 
   hasInitializedPostHog = true;

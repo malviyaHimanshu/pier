@@ -12,7 +12,7 @@ export default function Home() {
 
         <header className="relative">
           <div className="flex justify-between gap-5 items-center w-full max-w-4xl mx-auto">
-            <Link href={'/'}>
+            <Link href={"/"}>
               <div className="flex items-center gap-2.5">
                 <Image
                   src="/logo.png"
@@ -26,8 +26,10 @@ export default function Home() {
             </Link>
 
             <div className="text-white/70 text-sm">
-              <Link href={'/docs'}>
-                <p className="py-1.5 px-3 font-medium hover:bg-white/10 rounded-full transition-all">Docs</p>
+              <Link href={"/docs"}>
+                <p className="py-1.5 px-3 font-medium hover:bg-white/10 rounded-full transition-all">
+                  Docs
+                </p>
               </Link>
             </div>
           </div>
@@ -49,8 +51,8 @@ export default function Home() {
                 href="#"
                 className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
               >
-                <Image 
-                  src={'/chrome.png'}
+                <Image
+                  src={"/chrome.png"}
                   alt=""
                   height={100}
                   width={100}
@@ -62,8 +64,8 @@ export default function Home() {
                 href="https://github.com/malviyahimanshu/pier"
                 className="text-white text-sm font-medium px-5 py-2.5 rounded-full border border-white/40 opacity-80 hover:opacity-100 transition-all flex items-center gap-2"
               >
-                <Image 
-                  src={'/github.png'}
+                <Image
+                  src={"/github.png"}
                   alt=""
                   height={100}
                   width={100}
@@ -112,16 +114,16 @@ export default function Home() {
             {[
               {
                 title: "Too many terminal windows",
-                desc: "Each project needs its own terminal. Switching between them breaks your flow.",
+                desc: "Each project needs its own terminal. Switching between them breaks your flow."
               },
               {
                 title: "Too many browser tabs",
-                desc: "Your app, docs, and tools live in separate tabs with no shared context.",
+                desc: "Your app, docs, and tools live in separate tabs with no shared context."
               },
               {
                 title: "Too many repos to track",
-                desc: "Mapping the right terminal to the right codebase is manual and error-prone.",
-              },
+                desc: "Mapping the right terminal to the right codebase is manual and error-prone."
+              }
             ].map(({ title, desc }) => (
               <div
                 key={title}
@@ -255,33 +257,33 @@ export default function Home() {
               {
                 step: "01",
                 title: "Register your project",
-                desc: "Run pier myapp pnpm dev to wrap portless and record hostname → project path.",
+                desc: "Run pier myapp pnpm dev to wrap portless and record hostname → project path."
               },
               {
                 step: "02",
                 title: "Bridge starts automatically",
-                desc: "Pier ensures a local WebSocket bridge is running on 127.0.0.1. No cloud required.",
+                desc: "Pier ensures a local WebSocket bridge is running on 127.0.0.1. No cloud required."
               },
               {
                 step: "03",
                 title: "Extension activates on localhost",
-                desc: "The Chrome extension detects your *.localhost page and opens a WebSocket to the bridge.",
+                desc: "The Chrome extension detects your *.localhost page and opens a WebSocket to the bridge."
               },
               {
                 step: "04",
                 title: "Session routed to your repo",
-                desc: "The bridge maps the hostname back to your codebase directory and opens a shell session.",
+                desc: "The bridge maps the hostname back to your codebase directory and opens a shell session."
               },
               {
                 step: "05",
                 title: "Terminal renders inside your app",
-                desc: "An xterm.js panel appears in your page. Press Ctrl+` to toggle it at any time.",
+                desc: "An xterm.js panel appears in your page. Press Ctrl+` to toggle it at any time."
               },
               {
                 step: "06",
                 title: "Context stays isolated",
-                desc: "Each project gets isolated cookies and localStorage via portless — no port collisions.",
-              },
+                desc: "Each project gets isolated cookies and localStorage via portless — no port collisions."
+              }
             ].map(({ step, title, desc }) => (
               <div
                 key={step}
@@ -371,10 +373,10 @@ export default function Home() {
             {[
               {
                 cmd: "npm install -g portless @malviyahimanshu/pier",
-                comment: "# install once",
+                comment: "# install once"
               },
               { cmd: "pier setup", comment: "# start bridge, print token" },
-              { cmd: "pier myapp pnpm dev", comment: "# open myapp.localhost" },
+              { cmd: "pier myapp pnpm dev", comment: "# open myapp.localhost" }
             ].map(({ cmd, comment }) => (
               <div
                 key={cmd}
@@ -417,8 +419,8 @@ export default function Home() {
               href="#"
               className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
             >
-              <Image 
-                src={'/chrome.png'}
+              <Image
+                src={"/chrome.png"}
                 alt=""
                 height={100}
                 width={100}
@@ -430,8 +432,8 @@ export default function Home() {
               href="https://github.com/malviyahimanshu/pier"
               className="text-white text-sm font-medium px-5 py-2.5 rounded-full border border-white/40 opacity-80 hover:opacity-100 transition-all flex items-center gap-2"
             >
-              <Image 
-                src={'/github.png'}
+              <Image
+                src={"/github.png"}
                 alt=""
                 height={100}
                 width={100}

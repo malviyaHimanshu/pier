@@ -17,7 +17,8 @@ export const docsPages: DocEntry[] = [
   {
     slug: "setup",
     title: "Setup",
-    description: "Install Pier, load the extension, and validate your first run."
+    description:
+      "Install Pier, load the extension, and validate your first run."
   },
   {
     slug: "usage",
@@ -27,27 +28,32 @@ export const docsPages: DocEntry[] = [
   {
     slug: "configuration",
     title: "Configuration",
-    description: "Understand Pier config files, local state, and bridge environment variables."
+    description:
+      "Understand Pier config files, local state, and bridge environment variables."
   },
   {
     slug: "troubleshooting",
     title: "Troubleshooting",
-    description: "Fix common setup, mapping, bridge, and terminal issues quickly."
+    description:
+      "Fix common setup, mapping, bridge, and terminal issues quickly."
   },
   {
     slug: "architecture",
     title: "Architecture",
-    description: "See how CLI, bridge, extension, and terminal rendering fit together."
+    description:
+      "See how CLI, bridge, extension, and terminal rendering fit together."
   },
   {
     slug: "contributing",
     title: "Contributing",
-    description: "Local development workflow, expectations, and source-of-truth guidance."
+    description:
+      "Local development workflow, expectations, and source-of-truth guidance."
   },
   {
     slug: "release",
     title: "Release",
-    description: "Build release artifacts and publish to npm and Chrome Web Store."
+    description:
+      "Build release artifacts and publish to npm and Chrome Web Store."
   }
 ];
 

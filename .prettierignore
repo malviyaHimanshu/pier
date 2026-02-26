@@ -5,3 +5,4 @@ pnpm-lock.yaml
 package-lock.json
 extension/vendor
 extension/manifest.json
+apps/site/.next

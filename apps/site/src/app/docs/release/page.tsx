@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DocsPageShell, CommandBlock, InlineCode } from "../_components/docs-page-shell";
+import {
+  DocsPageShell,
+  CommandBlock,
+  InlineCode
+} from "../_components/docs-page-shell";
 import { requireDocBySlug } from "@/lib/docs";
 
 const doc = requireDocBySlug("release");
@@ -12,8 +16,12 @@ export const metadata: Metadata = {
 export default function ReleaseDocsPage() {
   return (
     <DocsPageShell slug="release">
-      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">Release Artifacts</h2>
-      <p className="text-neutral-600 leading-relaxed">This repo ships two artifacts:</p>
+      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        Release Artifacts
+      </h2>
+      <p className="text-neutral-600 leading-relaxed">
+        This repo ships two artifacts:
+      </p>
       <ul className="list-disc pl-5 space-y-2 text-neutral-600">
         <li>
           npm package: <InlineCode>@malviyahimanshu/pier</InlineCode>
@@ -29,7 +37,9 @@ export default function ReleaseDocsPage() {
         <li>npm account 2FA enabled</li>
         <li>Chrome Web Store developer account</li>
         <li>Clean working tree recommended</li>
-        <li>Version bumped in package.json (and changesets/changelog if used)</li>
+        <li>
+          Version bumped in package.json (and changesets/changelog if used)
+        </li>
       </ol>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
@@ -60,10 +70,11 @@ export default function ReleaseDocsPage() {
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         npm Publish (Manual)
       </h2>
-      <CommandBlock>{"pnpm run release:npm:dry-run\nnpm publish --access public"}</CommandBlock>
+      <CommandBlock>
+        {"pnpm run release:npm:dry-run\nnpm publish --access public"}
+      </CommandBlock>
       <p className="text-neutral-600 leading-relaxed">
-        Best practice: publish from a tagged commit and verify with
-        {' '}
+        Best practice: publish from a tagged commit and verify with{" "}
         <InlineCode>npm view @malviyahimanshu/pier version</InlineCode>.
       </p>
 
@@ -76,7 +87,9 @@ export default function ReleaseDocsPage() {
           <InlineCode>{"git tag vX.Y.Z && git push origin vX.Y.Z"}</InlineCode>
         </li>
         <li>Add NPM_TOKEN in repository secrets</li>
-        <li>Workflow publishes with provenance and uploads release artifacts</li>
+        <li>
+          Workflow publishes with provenance and uploads release artifacts
+        </li>
       </ul>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
@@ -93,7 +106,11 @@ export default function ReleaseDocsPage() {
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Quick Validation Commands
       </h2>
-      <CommandBlock>{"pnpm run build\npnpm run check\npnpm run pack:npm\npnpm run test:pack-smoke\npnpm run pack:extension"}</CommandBlock>
+      <CommandBlock>
+        {
+          "pnpm run build\npnpm run check\npnpm run pack:npm\npnpm run test:pack-smoke\npnpm run pack:extension"
+        }
+      </CommandBlock>
     </DocsPageShell>
   );
 }

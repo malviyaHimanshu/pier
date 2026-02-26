@@ -4,7 +4,8 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Privacy policy for the Pier website, CLI, and browser extension."
+  description:
+    "Privacy policy for the Pier website, CLI, and browser extension."
 };
 
 export default function PrivacyPage() {
@@ -112,9 +113,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-medium text-neutral-900">
-                Security
-              </h2>
+              <h2 className="text-lg font-medium text-neutral-900">Security</h2>
               <p className="mt-3 text-sm sm:text-base font-medium text-neutral-500 leading-relaxed">
                 The local bridge listens on localhost and expects an access
                 token from trusted clients. You are responsible for securing
@@ -146,9 +145,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="text-lg font-medium text-neutral-900">
-                Contact
-              </h2>
+              <h2 className="text-lg font-medium text-neutral-900">Contact</h2>
               <p className="mt-3 text-sm sm:text-base font-medium text-neutral-500 leading-relaxed">
                 For privacy questions, open an issue in the Pier repository on
                 GitHub.

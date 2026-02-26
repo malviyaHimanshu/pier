@@ -1,60 +1,29 @@
 # Pier
 
-Pier is a developer tool that embeds a real terminal inside your localhost app pages.
+In-browser terminal for your `*.localhost` apps with [Portless](https://github.com/vercel-labs/portless), mapped to the right repo automatically.
 
-It is built for fast parallel product development with `portless`: each project can live in its own `*.localhost` tab with isolated browser storage, while Pier opens a terminal panel in the correct repo directory for that page.
+```diff
+- "dev": "pnpm dev"
++ "dev": "pier myapp pnpm dev"  # http://myapp.localhost:1355
+```
 
-## What Pier Solves
+[Website](https://pier.himan.me) • [Docs](https://pier.himan.me/docs)
 
-When you are building multiple apps/agents in parallel, context switching gets expensive:
-
-- too many terminal windows
-- too many browser tabs
-- too many repos/dev servers
-
-Pier keeps each project self-contained in one browser tab:
-
-- app UI
-- in-page shell terminal (xterm.js + local bridge)
-- isolated cookies/localStorage via `portless`
-- automatic hostname -> codebase routing
-
-## How It Works (High Level)
-
-1. `pier <name> <cmd...>` wraps `portless` and records `<name>.localhost -> cwd`
-2. Pier ensures a local terminal bridge server is running
-3. The Chrome/Chromium extension activates on localhost pages
-4. The content script opens a WebSocket to the bridge
-5. The bridge resolves the page hostname to the mapped repo path
-6. A shell session is created/reused and streamed into the page terminal panel
-
-## Quickstart (Published Package)
-
-### Prerequisites
-
-- Node.js 20+
-- Chrome or Chromium (MV3 support)
-- `portless`
-
-Install:
+## Quick Start
 
 ```bash
+# Install
 npm install -g portless @malviyahimanshu/pier
-```
 
-### First-Time Setup
-
-```bash
+# One-time setup (starts bridge and prints token + ws URL)
 pier setup
+
+# Run an app through a stable localhost hostname
+pier myapp pnpm dev
+# -> http://myapp.localhost:1355
 ```
 
-This starts the local bridge and prints:
-
-- WebSocket URL
-- access token
-- next steps
-
-### Load the Extension
+Load the extension:
 
 ```bash
 pier extension path
@@ -67,64 +36,96 @@ Then in Chrome/Chromium:
 3. Click **Load unpacked**
 4. Select the directory printed by `pier extension path`
 
-### Configure the Extension
+Open the app URL and press `Ctrl+\`` to toggle the Pier panel.
 
-Open **Pier Settings** and paste:
+## Why Pier
 
-- WebSocket URL (for example `ws://127.0.0.1:4570/terminal`)
-- Access Token
+When you build multiple apps or agents in parallel, context switching becomes expensive:
 
-Use **Test Bridge** to verify connectivity.
+- **Terminal sprawl**: too many terminal windows tied to different repos
+- **Tab ambiguity**: many localhost tabs with unclear workspace context
+- **Wrong-shell errors**: commands run in the wrong directory
+- **Storage collisions**: cookies/localStorage overlap across localhost apps
 
-### Start an App
+Pier keeps each project self-contained in one tab:
 
-From your project directory:
+- app UI at a stable `*.localhost` hostname (via `portless`)
+- in-page terminal panel (xterm.js + local bridge)
+- hostname -> repo routing with session reuse
 
-```bash
-pier myapp pnpm dev
-```
-
-Open the `portless` URL (for example `http://myapp.localhost:1355`) and press:
-
-- `Ctrl+\`` on macOS
-- `Ctrl+\`` on Windows/Linux
-
-## Daily Commands
+## Usage
 
 ```bash
+# Basic
 pier myapp pnpm dev
+# -> http://myapp.localhost:1355
+
+# Subdomain-style apps
 pier api.myapp pnpm dev
+# -> http://api.myapp.localhost:1355
+
+# Inspect routing
 pier map list
 pier map where myapp.localhost
-pier bridge status
-pier doctor
 ```
 
-## CLI Reference (Summary)
+### package.json Script
+
+```json
+{
+  "scripts": {
+    "dev": "pier myapp pnpm dev"
+  }
+}
+```
+
+## How It Works
+
+```mermaid
+flowchart LR
+    A["Browser tab\nmyapp.localhost:1355"] --> B["Pier extension\ncontent script + panel"]
+    B --> C["Pier bridge\nlocalhost WebSocket server"]
+    C --> D["Workspace registry\nhostname -> cwd"]
+    D --> E["Shell session\npty/pipes in mapped repo"]
+```
+
+1. `pier <name> <cmd...>` wraps `portless` and records `<name>.localhost -> cwd`
+2. Pier ensures the local bridge is running
+3. Extension connects to the bridge with token auth
+4. Bridge resolves the page hostname to a workspace path
+5. Terminal session is created or reused in that workspace
+
+## Commands
 
 ```bash
-pier <name> <cmd...>         # wraps portless, ensures bridge, maps host -> cwd
+pier <name> <cmd...>         # run app with mapping + bridge bootstrap
+
+# Mapping
 pier map list
 pier map add <host.localhost> [cwd]
 pier map remove <host.localhost>
 pier map where <host.localhost>
+
+# Bridge
 pier bridge start [--foreground]
 pier bridge stop
 pier bridge status
 pier bridge logs
+
+# Extension & diagnostics
 pier extension path
 pier doctor
 pier setup
 ```
 
-## Security Model
+## Security
 
-- Bridge listens on localhost by default (`127.0.0.1`)
-- WebSocket access requires token authentication
+- Bridge binds to localhost by default (`127.0.0.1`)
+- WebSocket requires token authentication
 - Extension only activates on localhost-style pages
-- Bridge upgrade requests only allow localhost origins and extension origins
+- Bridge upgrade checks allow only localhost + extension origins
 
-## Local Development (Contributors)
+## Development
 
 ```bash
 pnpm install
@@ -132,13 +133,7 @@ pnpm run build
 pnpm run check
 ```
 
-Key points:
-
-- Authored extension code lives in `packages/extension-src`
-- `extension/` is generated build output (ignored in git)
-- Node packages compile to `packages/*/dist`
-
-### Local Loop
+Local loop:
 
 ```bash
 pnpm run build:extension --watch
@@ -155,9 +150,13 @@ pnpm run test:smoke
 - `packages/extension-src` - extension source (TS/TSX + static assets)
 - `extension/` - generated unpacked extension assets
 - `cli/`, `server/`, `bin/` - compatibility shims
-- `docs/` - user and contributor documentation
+- `docs/` - source docs for users and contributors
 
 ## Docs
+
+Live docs: https://pier.himan.me/docs
+
+Source docs in repo:
 
 - [Setup](docs/setup.md)
 - [Usage](docs/usage.md)
@@ -167,11 +166,11 @@ pnpm run test:smoke
 - [Contributing](docs/contributing.md)
 - [Release](docs/release.md)
 
-## Version / Support Matrix
+## Requirements
 
-- Node.js: `>=20`
-- Package manager for development: `pnpm 10+`
-- Browser: Chrome / Chromium (Manifest V3)
+- Node.js 20+
+- `portless`
+- Chrome or Chromium (Manifest V3)
 
 ## License
 

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
-import { DocsPageShell, CommandBlock, InlineCode } from "../_components/docs-page-shell";
+import {
+  DocsPageShell,
+  CommandBlock,
+  InlineCode
+} from "../_components/docs-page-shell";
 import { requireDocBySlug } from "@/lib/docs";
 
 const doc = requireDocBySlug("setup");
@@ -12,15 +16,22 @@ export const metadata: Metadata = {
 export default function SetupDocsPage() {
   return (
     <DocsPageShell slug="setup">
-      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">Install (Published Package)</h2>
-      <CommandBlock>{"npm install -g portless @malviyahimanshu/pier"}</CommandBlock>
+      <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        Install (Published Package)
+      </h2>
+      <CommandBlock>
+        {"npm install -g portless @malviyahimanshu/pier"}
+      </CommandBlock>
 
-      <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">Initialize Pier</h2>
+      <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        Initialize Pier
+      </h2>
       <CommandBlock>{"pier setup"}</CommandBlock>
       <p className="text-neutral-600 leading-relaxed">
-        <InlineCode>pier setup</InlineCode> creates <InlineCode>~/.pier/config.json</InlineCode> if
-        missing, starts the local bridge server, and prints the WebSocket URL and token for
-        the extension.
+        <InlineCode>pier setup</InlineCode> creates{" "}
+        <InlineCode>~/.pier/config.json</InlineCode> if missing, starts the
+        local bridge server, and prints the WebSocket URL and token for the
+        extension.
       </p>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
@@ -41,8 +52,8 @@ export default function SetupDocsPage() {
         Configure Extension Settings
       </h2>
       <p className="text-neutral-600 leading-relaxed">
-        Open Pier Settings and paste the WebSocket URL and access token from setup. Use Test
-        Bridge before opening localhost pages.
+        Open Pier Settings and paste the WebSocket URL and access token from
+        setup. Use Test Bridge before opening localhost pages.
       </p>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
@@ -56,7 +67,8 @@ export default function SetupDocsPage() {
           Start an app with <InlineCode>pier myapp pnpm dev</InlineCode>
         </li>
         <li>
-          Open your localhost URL and press Ctrl+` on macOS or Ctrl+` on Windows/Linux
+          Open your localhost URL and press Ctrl+` on macOS or Ctrl+` on
+          Windows/Linux
         </li>
         <li>Confirm terminal opens in the mapped project directory</li>
       </ol>

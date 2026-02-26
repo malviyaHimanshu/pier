@@ -19,10 +19,11 @@ Add environment variables in your deployment (and optionally in `.env.local`):
 ```bash
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
-NEXT_PUBLIC_POSTHOG_ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+NEXT_PUBLIC_POSTHOG_ALLOWED_HOSTS=pier.himan.me
 ```
 
 Behavior:
+
 - Analytics is disabled unless `NODE_ENV=production`.
 - Analytics is disabled when `NEXT_PUBLIC_POSTHOG_KEY` is missing.
 - Analytics is disabled when the current hostname is not in `NEXT_PUBLIC_POSTHOG_ALLOWED_HOSTS`.

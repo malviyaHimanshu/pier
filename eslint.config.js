@@ -10,6 +10,9 @@ module.exports = [
       "coverage/**",
       "*.tgz",
       "packages/*/dist/**",
+      "apps/site/.next/**",
+      "apps/site/next-env.d.ts",
+      "apps/site/tsconfig.tsbuildinfo",
       "extension/*.js",
       "extension/vendor/*.js",
       "extension/vendor/xterm.css"

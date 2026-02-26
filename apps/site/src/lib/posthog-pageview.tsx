@@ -27,7 +27,7 @@ export function PostHogPageview() {
     posthog.capture("$pageview", {
       path: pathname,
       search: searchWithPrefix,
-      url: `${window.location.origin}${pathname}${searchWithPrefix}`,
+      url: `${window.location.origin}${pathname}${searchWithPrefix}`
     });
   }, [pathname, search]);
 

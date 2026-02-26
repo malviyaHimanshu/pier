@@ -1,6 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { docsPages, getDocNeighbors, requireDocBySlug, type DocSlug } from "@/lib/docs";
+import {
+  docsPages,
+  getDocNeighbors,
+  requireDocBySlug,
+  type DocSlug
+} from "@/lib/docs";
 import { cn } from "@/lib/utils";
 
 export function CommandBlock({ children }: { children: string }) {
@@ -46,10 +51,11 @@ export function DocsPageShell({
                   className="object-contain h-6 w-auto pointer-events-none select-none"
                 />
                 <span className="text-xl font-medium text-white">Pier</span>
-                <div className="text-white/80 text-sm py-1 px-2.5 bg-emerald-600/20 rounded-full font-medium">Docs</div>
+                <div className="text-white/80 text-sm py-1 px-2.5 bg-emerald-600/20 rounded-full font-medium">
+                  Docs
+                </div>
               </div>
             </Link>
-
           </div>
         </header>
 
@@ -79,7 +85,8 @@ export function DocsPageShell({
                   <Link
                     key={page.slug}
                     href={`/docs/${page.slug}`}
-                    className={cn("py-1.5 px-3 rounded-lg font-medium transition-all",
+                    className={cn(
+                      "py-1.5 px-3 rounded-lg font-medium transition-all",
                       active
                         ? "text-sm text-emerald-600 bg-emerald-600/10"
                         : "text-sm text-neutral-500 hover:bg-neutral-100"
@@ -101,8 +108,12 @@ export function DocsPageShell({
                   href={`/docs/${previous.slug}`}
                   className="rounded-xl border border-neutral-200 px-4 py-3 hover:border-emerald-600 transition-colors"
                 >
-                  <p className="text-xs uppercase tracking-wider text-neutral-400">Previous</p>
-                  <p className="mt-1 text-sm font-medium text-neutral-800">{previous.title}</p>
+                  <p className="text-xs uppercase tracking-wider text-neutral-400">
+                    Previous
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-neutral-800">
+                    {previous.title}
+                  </p>
                 </Link>
               ) : (
                 <div />
@@ -113,8 +124,12 @@ export function DocsPageShell({
                   href={`/docs/${next.slug}`}
                   className="rounded-xl border border-neutral-200 px-4 py-3 hover:border-emerald-600 transition-colors text-left sm:text-right"
                 >
-                  <p className="text-xs uppercase tracking-wider text-neutral-400">Next</p>
-                  <p className="mt-1 text-sm font-medium text-neutral-800">{next.title}</p>
+                  <p className="text-xs uppercase tracking-wider text-neutral-400">
+                    Next
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-neutral-800">
+                    {next.title}
+                  </p>
                 </Link>
               ) : (
                 <div />
@@ -161,7 +176,7 @@ export function DocsPageShell({
           </div>
         </div>
       </footer>
-{/* 
+      {/* 
       <footer className="py-8 sm:py-10 px-4 sm:px-6 bg-emerald-950 border-t border-emerald-900/60">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
