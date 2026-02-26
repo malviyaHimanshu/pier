@@ -373,10 +373,13 @@ export default function Home() {
           <div className="mt-10 sm:mt-12 space-y-2.5 max-w-xl">
             {[
               {
-                cmd: "npm install -g portless @malviyahimanshu/pier",
+                cmd: "npm install -g @malviyahimanshu/pier",
                 comment: "# install once"
               },
-              { cmd: "pier setup", comment: "# start bridge, print token" },
+              {
+                cmd: "pier setup",
+                comment: "# bridge + proxy + token"
+              },
               { cmd: "pier myapp pnpm dev", comment: "# open myapp.localhost" }
             ].map(({ cmd, comment }) => (
               <div

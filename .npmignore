@@ -1,9 +1,11 @@
 *.tgz
 *.tsbuildinfo
+*.map
 
 packages/*/src/
 packages/*/tsconfig.json
 packages/*/tsconfig.tsbuildinfo
+packages/*/dist/**/*.map
 
 packages/extension-src/src/
 packages/extension-src/tsconfig.json

@@ -25,8 +25,8 @@ This runs build + checks, creates the npm tarball, validates the tarball install
 Artifacts produced:
 
 - `./malviyahimanshu-pier-<version>.tgz`
-- `./artifacts/chrome-web-store/pier-extension-chrome-web-store-v<version>.zip`
-- `./artifacts/chrome-web-store/pier-extension-chrome-web-store-v<version>.zip.sha256`
+- `./artifacts/chrome-web-store/pier-extension-v<version>.zip`
+- `./artifacts/chrome-web-store/pier-extension-v<version>.zip.sha256`
 
 ## npm Publish (Manual)
 
@@ -54,7 +54,7 @@ The repo includes `.github/workflows/release.yml`.
 
 - Tag a release commit: `git tag vX.Y.Z && git push origin vX.Y.Z`
 - Add `NPM_TOKEN` in repo secrets
-- The workflow will build/test again and publish with `--provenance`
+- The workflow will build/test again, publish with `--provenance`, and attach npm/extension artifacts to the GitHub release
 - Release artifacts (npm tarball + extension ZIP) are uploaded as workflow artifacts
 
 ## Chrome Web Store Publish (Manual Upload)
@@ -62,7 +62,7 @@ The repo includes `.github/workflows/release.yml`.
 1. Run `pnpm run release:artifacts`
 2. Open the Chrome Web Store Developer Dashboard
 3. Select the Pier extension listing
-4. Upload `artifacts/chrome-web-store/pier-extension-chrome-web-store-v<version>.zip`
+4. Upload `artifacts/chrome-web-store/pier-extension-v<version>.zip`
 5. Complete listing/review fields (what changed, screenshots, privacy disclosures)
 6. Submit for review / publish rollout
 

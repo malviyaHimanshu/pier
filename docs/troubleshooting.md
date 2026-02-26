@@ -9,7 +9,14 @@ Symptom:
 Fix:
 
 ```bash
-npm install -g portless
+# bundled runtime should work automatically
+npm install -g @malviyahimanshu/pier
+```
+
+If you need a custom binary path:
+
+```bash
+PIER_PORTLESS_BIN=/absolute/path/to/portless pier doctor
 ```
 
 ## Bridge Unreachable in Extension
@@ -57,3 +64,21 @@ Checks:
 - Confirm page is `localhost`, `127.0.0.1`, `::1`, or `*.localhost`
 - Check extension is enabled
 - Reload the page after updating extension settings
+
+If not installed yet, install from Chrome Web Store:
+
+- https://chromewebstore.google.com/detail/pier/gfhbagnaafeefbkjcocmpnepfggbbdpj
+
+## Manual Extension Bundle Install Fails
+
+Run:
+
+```bash
+pier extension install
+```
+
+If you have a local ZIP + checksum:
+
+```bash
+pier extension install --from /path/to/pier-extension-v<version>.zip
+```

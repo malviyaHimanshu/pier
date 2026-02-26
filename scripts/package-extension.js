@@ -78,7 +78,7 @@ function main() {
   ensureBuiltExtension();
 
   fs.mkdirSync(artifactsDir, { recursive: true });
-  const baseName = `pier-extension-chrome-web-store-v${pkg.version}.zip`;
+  const baseName = `pier-extension-v${pkg.version}.zip`;
   const zipPath = path.join(artifactsDir, baseName);
   const checksumPath = `${zipPath}.sha256`;
 

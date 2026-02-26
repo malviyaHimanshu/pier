@@ -22,6 +22,10 @@ export default function ArchitectureDocsPage() {
         </li>
         <li>CLI ensures the bridge process is running</li>
         <li>
+          <InlineCode>pier setup</InlineCode> ensures the Portless proxy is
+          running and prints bridge connection details for the extension
+        </li>
+        <li>
           Extension content script activates only on localhost-style pages
         </li>
         <li>
@@ -81,10 +85,16 @@ export default function ArchitectureDocsPage() {
           Published package is a single npm package:{" "}
           <InlineCode>@malviyahimanshu/pier</InlineCode>
         </li>
+        <li>Chrome Web Store extension is the primary user install path</li>
+        <li>
+          <InlineCode>pier extension install</InlineCode> remains available for
+          manual unpacked workflows
+        </li>
         <li>Internal packages are implementation details</li>
         <li>
           <InlineCode>prepack</InlineCode> runs build and checks so published
-          tarballs include generated extension output and compiled dist files
+          tarballs include compiled dist files and release packaging can produce
+          extension ZIP artifacts
         </li>
       </ul>
     </DocsPageShell>

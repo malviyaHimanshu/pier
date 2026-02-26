@@ -4,11 +4,12 @@
 
 1. `pier <name> <cmd...>` wraps `portless` and records `<name>.localhost -> cwd`
 2. CLI ensures the bridge process is running
-3. Extension content script activates only on localhost-style pages
-4. Content script opens WebSocket `/terminal` with token + page context
-5. Bridge resolves the page hostname using the workspace registry
-6. Bridge creates/reuses shell session (`node-pty`, with pipe fallback)
-7. xterm.js renders terminal output in-page
+3. `pier setup` ensures Portless proxy is running and prints bridge connection details
+4. Extension content script activates only on localhost-style pages
+5. Content script opens WebSocket `/terminal` with token + page context
+6. Bridge resolves the page hostname using the workspace registry
+7. Bridge creates/reuses shell session (`node-pty`, with pipe fallback)
+8. xterm.js renders terminal output in-page
 
 ## Repository Structure
 
@@ -32,5 +33,7 @@
 ## Packaging Model
 
 - Published package is a single npm package (`@malviyahimanshu/pier`) with the `pier` CLI binary
+- Chrome Web Store extension is the primary user install path
+- `pier extension install` remains available for manual unpacked workflows
 - Internal packages remain implementation details
-- `prepack` runs build + checks so the published tarball includes generated extension output and compiled `dist/` files
+- `prepack` runs build + checks so the published tarball includes compiled `dist/` files and release packaging can produce extension ZIP artifacts

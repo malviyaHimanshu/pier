@@ -13,9 +13,9 @@ In-browser terminal for your `*.localhost` apps with [Portless](https://github.c
 
 ```bash
 # Install
-npm install -g portless @malviyahimanshu/pier
+npm install -g @malviyahimanshu/pier
 
-# One-time setup (starts bridge and prints token + ws URL)
+# One-time setup (starts bridge + proxy, prints token + ws URL)
 pier setup
 
 # Run an app through a stable localhost hostname
@@ -23,20 +23,18 @@ pier myapp pnpm dev
 # -> http://myapp.localhost:1355
 ```
 
-Load the extension:
+Install the extension from Chrome Web Store:
 
-```bash
-pier extension path
-```
-
-Then in Chrome/Chromium:
-
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked**
-4. Select the directory printed by `pier extension path`
+- https://chromewebstore.google.com/detail/pier/gfhbagnaafeefbkjcocmpnepfggbbdpj
 
 Open the app URL and press `Ctrl+\`` to toggle the Pier panel.
+
+Manual unpacked extension flow (optional):
+
+```bash
+pier extension install
+pier extension path
+```
 
 ## Why Pier
 
@@ -114,8 +112,10 @@ pier bridge logs
 
 # Extension & diagnostics
 pier extension path
+pier extension url
+pier extension install [--force] [--version <x.y.z>] [--from <url-or-file>]
 pier doctor
-pier setup
+pier setup [--https] [--manual-extension]
 ```
 
 ## Security
@@ -169,7 +169,6 @@ Source docs in repo:
 ## Requirements
 
 - Node.js 20+
-- `portless`
 - Chrome or Chromium (Manifest V3)
 
 ## License

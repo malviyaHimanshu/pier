@@ -13,6 +13,7 @@ const {
 const {
   BRIDGE_LOG_PATH,
   CONFIG_PATH,
+  checkTcpOpen,
   ensureConfig,
   readConfig,
   STATE_DIR
@@ -22,6 +23,15 @@ const {
   startBridge,
   stopBridge
 } = require("./bridge/bridge-process");
+const {
+  REQUIRED_EXTENSION_FILES,
+  getInstalledExtensionPath,
+  getPierVersion,
+  installExtensionBundle
+} = require("./extension/installer");
+
+const CHROME_WEB_STORE_URL =
+  "https://chromewebstore.google.com/detail/pier/gfhbagnaafeefbkjcocmpnepfggbbdpj";
 
 function stdout(message = "") {
   process.stdout.write(`${message}\n`);
@@ -29,6 +39,10 @@ function stdout(message = "") {
 
 function stderr(message = "") {
   process.stderr.write(`${message}\n`);
+}
+
+function warn(message = "") {
+  stderr(`[pier] WARN: ${message}`);
 }
 
 function fail(message, code = 1) {
@@ -50,13 +64,18 @@ function printHelp() {
   stdout("  pier bridge status");
   stdout("  pier bridge logs");
   stdout("  pier extension path");
+  stdout("  pier extension url");
+  stdout(
+    "  pier extension install [--force] [--version <x.y.z>] [--from <url-or-file>]"
+  );
   stdout("  pier doctor");
-  stdout("  pier setup");
+  stdout("  pier setup [--https] [--manual-extension]");
   stdout("");
   stdout("Examples:");
   stdout("  pier myapp pnpm dev");
   stdout("  pier api.myapp next dev");
   stdout("  pier map add myapp.localhost /path/to/project");
+  stdout("  pier setup --https");
   stdout("");
   stdout("Legacy compatibility:");
   stdout("  node scripts/dev-hosts.js ...");
@@ -82,8 +101,6 @@ function parseNameToHost(nameInput) {
     throw new Error("Invalid app name.");
   }
 
-  // Reuse registry validation by attempting add-path normalization via the existing host parser indirectly.
-  // `upsertRoute` validates host, but we validate with a no-op strategy to avoid FS writes.
   const { normalizeRouteHost } = require("./workspace-registry/registry");
   const normalizedHost = normalizeRouteHost(host, {
     allowLoopbackLiteral: false
@@ -289,67 +306,341 @@ function checkCommandAvailable(command, args = ["--version"]) {
   }
 }
 
-async function cmdDoctor() {
-  const { config, created } = ensureConfig();
-  const status = await getBridgeStatus(config);
-  const portless = checkCommandAvailable("portless", ["--version"]);
-  const registryExists = fs.existsSync(config.bridge.workspaceRouteMapPath);
-
-  stdout("pier doctor");
-  stdout("");
-  stdout(`State dir: ${STATE_DIR}`);
-  stdout(`Config: ${CONFIG_PATH}`);
-  stdout(`Config created now: ${created ? "yes" : "no"}`);
-  stdout(`Bridge host: ${config.bridge.host}`);
-  stdout(`Bridge port: ${config.bridge.port}`);
-  stdout(
-    `Bridge token: ${config.bridge.token ? `set (${config.bridge.token.length} chars)` : "missing"}`
+function getPortlessProxyPort() {
+  const value = Number.parseInt(
+    String(process.env.PORTLESS_PORT || "1355"),
+    10
   );
-  stdout(
-    `Registry path: ${config.bridge.workspaceRouteMapPath}${registryExists ? "" : " (will be created on first mapping)"}`
-  );
-  stdout(`Bridge status: ${status.running ? "running" : "stopped"}`);
-  stdout(
-    `Bridge health URL: http://${config.bridge.host}:${config.bridge.port}/health`
-  );
-  if (!status.running && status.health?.error) {
-    stdout(`Bridge health error: ${status.health.error}`);
+  if (!Number.isFinite(value) || value < 1 || value > 65535) {
+    return 1355;
   }
-  stdout(`portless: ${portless.ok ? "ok" : "missing/unavailable"}`);
-  if (portless.ok && portless.output) {
-    stdout(`portless version: ${portless.output}`);
-  }
-  if (!portless.ok) {
-    stdout("Install portless: npm install -g portless");
-  }
-  stdout("");
-  stdout("Extension settings:");
-  stdout(
-    `  WebSocket URL: ws://${config.bridge.host}:${config.bridge.port}/terminal`
-  );
-  stdout(`  Token: ${config.bridge.token}`);
+  return value;
 }
 
-function getExtensionPath() {
+function isLikelyFilePath(value) {
+  return (
+    value.includes(path.sep) ||
+    (path.sep === "/" ? value.includes("\\") : value.includes("/")) ||
+    value.startsWith(".")
+  );
+}
+
+function isNodeScriptPath(filePath) {
+  return /\.(mjs|cjs|js)$/i.test(String(filePath || ""));
+}
+
+function resolvePortlessRunner() {
+  const override = String(process.env.PIER_PORTLESS_BIN || "").trim();
+  if (override) {
+    if (isLikelyFilePath(override) || fs.existsSync(override)) {
+      const resolved = path.resolve(override);
+      if (!fs.existsSync(resolved)) {
+        throw new Error(
+          `PIER_PORTLESS_BIN points to a missing file: ${resolved}`
+        );
+      }
+      if (isNodeScriptPath(resolved)) {
+        return {
+          source: "env",
+          mode: "node-script",
+          scriptPath: resolved
+        };
+      }
+      return {
+        source: "env",
+        mode: "command",
+        command: resolved
+      };
+    }
+
+    const envCommand = checkCommandAvailable(override, ["--version"]);
+    if (!envCommand.ok) {
+      throw new Error(
+        `PIER_PORTLESS_BIN command '${override}' is not executable: ${envCommand.error || "unknown error"}`
+      );
+    }
+    return {
+      source: "env",
+      mode: "command",
+      command: override
+    };
+  }
+
+  try {
+    const bundled = require.resolve("portless/dist/cli.js");
+    if (bundled && fs.existsSync(bundled)) {
+      return {
+        source: "bundled",
+        mode: "node-script",
+        scriptPath: bundled
+      };
+    }
+  } catch {
+    // fallback to PATH
+  }
+
+  const fromPath = checkCommandAvailable("portless", ["--version"]);
+  if (fromPath.ok) {
+    return {
+      source: "path",
+      mode: "command",
+      command: "portless"
+    };
+  }
+
+  throw new Error(
+    "Portless runtime unavailable. Reinstall Pier or set PIER_PORTLESS_BIN."
+  );
+}
+
+function buildPortlessInvocation(runner, args = []) {
+  if (runner.mode === "node-script") {
+    return {
+      command: process.execPath,
+      args: [runner.scriptPath, ...args]
+    };
+  }
+  return {
+    command: runner.command,
+    args: [...args]
+  };
+}
+
+function runPortlessCommandSync(args = [], options: any = {}) {
+  let runner = null;
+  try {
+    runner = options.runner || resolvePortlessRunner();
+  } catch (error) {
+    return {
+      ok: false,
+      runner: null,
+      invocation: null,
+      stdout: "",
+      stderr: "",
+      error: String(error.message || error),
+      status: null
+    };
+  }
+  const invocation = buildPortlessInvocation(runner, args);
+  const result = spawnSync(invocation.command, invocation.args, {
+    encoding: "utf8",
+    timeout: options.timeoutMs || 30000,
+    env: options.env || { ...process.env },
+    cwd: options.cwd || process.cwd(),
+    stdio: options.stdio || "pipe"
+  });
+
+  const stdoutValue = String(result.stdout || "").trim();
+  const stderrValue = String(result.stderr || "").trim();
+  const summary = [stderrValue, stdoutValue].filter(Boolean).join("\n");
+
+  if (result.error) {
+    return {
+      ok: false,
+      runner,
+      invocation,
+      stdout: stdoutValue,
+      stderr: stderrValue,
+      error: String(result.error.message || result.error),
+      status: result.status
+    };
+  }
+
+  if (typeof result.status === "number" && result.status !== 0) {
+    return {
+      ok: false,
+      runner,
+      invocation,
+      stdout: stdoutValue,
+      stderr: stderrValue,
+      error: summary || `exit ${result.status}`,
+      status: result.status
+    };
+  }
+
+  return {
+    ok: true,
+    runner,
+    invocation,
+    stdout: stdoutValue,
+    stderr: stderrValue,
+    status: result.status
+  };
+}
+
+function ensurePortlessProxy({ https = false } = {}) {
+  const args = ["proxy", "start"];
+  if (https) {
+    args.push("--https");
+  }
+  const result = runPortlessCommandSync(args, { timeoutMs: 45000 });
+  if (!result.ok) {
+    throw new Error(
+      `Failed to start portless proxy: ${result.error || "unknown error"}`
+    );
+  }
+  const merged = [result.stdout, result.stderr].filter(Boolean).join("\n");
+  return {
+    runner: result.runner,
+    alreadyRunning: /already running/i.test(merged),
+    output: merged
+  };
+}
+
+function getBundledExtensionPath() {
   return path.resolve(__dirname, "..", "..", "..", "extension");
 }
 
-function cmdExtension(argv) {
+function isValidExtensionDir(dirPath) {
+  return REQUIRED_EXTENSION_FILES.every((relPath) =>
+    fs.existsSync(path.join(dirPath, relPath))
+  );
+}
+
+function resolveExtensionPath({ version = getPierVersion() } = {}) {
+  const bundled = getBundledExtensionPath();
+  if (isValidExtensionDir(bundled)) {
+    return bundled;
+  }
+  return getInstalledExtensionPath({ version });
+}
+
+function getExtensionPath() {
+  return (
+    resolveExtensionPath({ version: getPierVersion() }) ||
+    getBundledExtensionPath()
+  );
+}
+
+function parseExtensionInstallArgs(argv) {
+  const options = {
+    force: false,
+    from: null,
+    version: getPierVersion()
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--force") {
+      options.force = true;
+      continue;
+    }
+    if (arg === "--version") {
+      const value = argv[index + 1];
+      if (!value) {
+        fail(
+          "Usage: pier extension install [--force] [--version <x.y.z>] [--from <url-or-file>]"
+        );
+      }
+      options.version = value;
+      index += 1;
+      continue;
+    }
+    if (arg === "--from") {
+      const value = argv[index + 1];
+      if (!value) {
+        fail(
+          "Usage: pier extension install [--force] [--version <x.y.z>] [--from <url-or-file>]"
+        );
+      }
+      options.from = value;
+      index += 1;
+      continue;
+    }
+    fail(`Unknown extension install option: ${arg}`);
+  }
+
+  return options;
+}
+
+async function cmdExtension(argv) {
   const sub = argv[0];
   if (!sub || isHelpFlag(sub)) {
-    stdout("Usage: pier extension <path>");
+    stdout("Usage:");
+    stdout("  pier extension path");
+    stdout("  pier extension url");
+    stdout(
+      "  pier extension install [--force] [--version <x.y.z>] [--from <url-or-file>]"
+    );
     return;
   }
+
+  if (sub === "url") {
+    stdout(CHROME_WEB_STORE_URL);
+    return;
+  }
+
   if (sub === "path") {
-    stdout(getExtensionPath());
+    const extensionPath = resolveExtensionPath({ version: getPierVersion() });
+    if (!extensionPath) {
+      fail(
+        "Manual extension bundle not found. Install from Chrome Web Store (recommended) or run `pier extension install`."
+      );
+    }
+    stdout(extensionPath);
     return;
   }
+
+  if (sub === "install") {
+    const options = parseExtensionInstallArgs(argv.slice(1));
+    const result = await installExtensionBundle(options);
+    if (result.alreadyInstalled) {
+      stdout(`Extension already installed at ${result.path}`);
+      return;
+    }
+    stdout(`Extension installed at ${result.path}`);
+    if (result.source) {
+      stdout(`Source: ${result.source}`);
+    }
+    return;
+  }
+
   fail(`Unknown extension subcommand: ${sub}`);
 }
 
-async function cmdSetup() {
+function parseSetupArgs(argv) {
+  const options = {
+    https: false,
+    manualExtension: false
+  };
+  for (const arg of argv) {
+    if (arg === "--https") {
+      options.https = true;
+      continue;
+    }
+    if (arg === "--manual-extension") {
+      options.manualExtension = true;
+      continue;
+    }
+    if (arg === "--skip-extension") {
+      // Backward compatibility for earlier setup flag.
+      continue;
+    }
+    fail(`Unknown setup option: ${arg}`);
+  }
+  return options;
+}
+
+async function cmdSetup(argv = []) {
+  const setupOptions = parseSetupArgs(argv);
   const { config, created } = ensureConfig();
   const bridge = await startBridge(config);
+  const proxy = ensurePortlessProxy({ https: setupOptions.https });
+  let extensionResult = null;
+  let extensionError = null;
+
+  if (setupOptions.manualExtension) {
+    try {
+      extensionResult = await installExtensionBundle({
+        version: getPierVersion()
+      });
+    } catch (error) {
+      extensionError = String(error.message || error);
+      warn(
+        `Extension install failed during setup (${extensionError}). Re-run: pier extension install`
+      );
+    }
+  }
 
   stdout("pier setup");
   stdout("");
@@ -359,6 +650,21 @@ async function cmdSetup() {
       ? `Bridge: already running on http://${config.bridge.host}:${config.bridge.port}/health`
       : `Bridge: started (pid ${bridge.pid})`
   );
+  stdout(
+    proxy.alreadyRunning
+      ? `Portless proxy: already running on port ${getPortlessProxyPort()}`
+      : `Portless proxy: started on port ${getPortlessProxyPort()}`
+  );
+  if (!setupOptions.manualExtension) {
+    stdout("Extension: use Chrome Web Store (recommended)");
+  } else if (extensionResult && extensionResult.alreadyInstalled) {
+    stdout(`Extension: already installed at ${extensionResult.path}`);
+  } else if (extensionResult && extensionResult.path) {
+    stdout(`Extension: installed at ${extensionResult.path}`);
+  } else {
+    stdout("Extension: manual install failed (setup continued)");
+  }
+
   stdout("");
   stdout("Set these in the extension options:");
   stdout(
@@ -366,10 +672,29 @@ async function cmdSetup() {
   );
   stdout(`  Token: ${config.bridge.token}`);
   stdout("");
+
+  const extensionPath = resolveExtensionPath({ version: getPierVersion() });
   stdout("Next steps:");
-  stdout(`  1. Load unpacked extension from: ${getExtensionPath()}`);
-  stdout("  2. Paste the WebSocket URL + token into Pier extension options");
+  stdout(
+    `  1. Install Pier extension from Chrome Web Store: ${CHROME_WEB_STORE_URL}`
+  );
+  stdout("  2. Open extension settings and paste the WebSocket URL + token");
   stdout("  3. From any repo, run: pier myapp pnpm dev");
+
+  stdout("");
+  stdout("Manual unpacked extension (optional):");
+  if (extensionPath) {
+    stdout(`  - Load unpacked from: ${extensionPath}`);
+  } else {
+    stdout("  - Run: pier extension install");
+    stdout("  - Then: pier extension path");
+    stdout("  - Load that folder in chrome://extensions");
+  }
+
+  if (extensionError) {
+    stdout("");
+    stdout(`Extension install warning: ${extensionError}`);
+  }
 }
 
 async function runPortlessApp(
@@ -411,7 +736,18 @@ async function runPortlessApp(
 
   stdout(`[pier] ${host} -> ${normalizedCwd}`);
 
-  const child = spawn("portless", [portlessName, ...commandArgs], {
+  let runner = null;
+  try {
+    runner = resolvePortlessRunner();
+  } catch (error) {
+    fail(String(error.message || error));
+  }
+  const invocation = buildPortlessInvocation(runner, [
+    portlessName,
+    ...commandArgs
+  ]);
+
+  const child = spawn(invocation.command, invocation.args, {
     cwd: normalizedCwd,
     stdio: "inherit",
     env: { ...process.env }
@@ -420,7 +756,7 @@ async function runPortlessApp(
   child.on("error", (error) => {
     if (error && error.code === "ENOENT") {
       fail(
-        "`portless` not found in PATH. Install it first: npm install -g portless"
+        "`portless` runtime not found. Reinstall `@malviyahimanshu/pier` or set PIER_PORTLESS_BIN."
       );
       return;
     }
@@ -434,6 +770,71 @@ async function runPortlessApp(
     }
     process.exit(code == null ? 1 : code);
   });
+}
+
+async function cmdDoctor() {
+  const { config, created } = ensureConfig();
+  const status = await getBridgeStatus(config);
+  const registryExists = fs.existsSync(config.bridge.workspaceRouteMapPath);
+  const proxyPort = getPortlessProxyPort();
+  const proxyListening = await checkTcpOpen("127.0.0.1", proxyPort);
+  const portlessVersion = runPortlessCommandSync(["--version"], {
+    timeoutMs: 3000
+  });
+
+  stdout("pier doctor");
+  stdout("");
+  stdout(`State dir: ${STATE_DIR}`);
+  stdout(`Config: ${CONFIG_PATH}`);
+  stdout(`Config created now: ${created ? "yes" : "no"}`);
+  stdout(`Bridge host: ${config.bridge.host}`);
+  stdout(`Bridge port: ${config.bridge.port}`);
+  stdout(
+    `Bridge token: ${config.bridge.token ? `set (${config.bridge.token.length} chars)` : "missing"}`
+  );
+  stdout(
+    `Registry path: ${config.bridge.workspaceRouteMapPath}${registryExists ? "" : " (will be created on first mapping)"}`
+  );
+  stdout(`Bridge status: ${status.running ? "running" : "stopped"}`);
+  stdout(
+    `Bridge health URL: http://${config.bridge.host}:${config.bridge.port}/health`
+  );
+  if (!status.running && status.health?.error) {
+    stdout(`Bridge health error: ${status.health.error}`);
+  }
+
+  if (portlessVersion.ok) {
+    stdout("Portless runtime: ok");
+    stdout(`Portless source: ${portlessVersion.runner.source}`);
+    if (portlessVersion.stdout || portlessVersion.stderr) {
+      stdout(
+        `Portless version: ${portlessVersion.stdout || portlessVersion.stderr}`
+      );
+    }
+  } else {
+    stdout("Portless runtime: missing/unavailable");
+    stdout(`Portless error: ${portlessVersion.error || "unknown"}`);
+    stdout(
+      "Fix: reinstall `@malviyahimanshu/pier` or set PIER_PORTLESS_BIN to a valid portless executable."
+    );
+  }
+  stdout(
+    `Portless proxy: ${proxyListening ? "listening" : "not listening"} on 127.0.0.1:${proxyPort}`
+  );
+
+  const extensionPath = resolveExtensionPath({ version: getPierVersion() });
+  stdout(`Extension (Chrome Web Store): ${CHROME_WEB_STORE_URL}`);
+  stdout(`Extension bundle (manual): ${extensionPath || "not installed"}`);
+  if (!extensionPath) {
+    stdout("Optional manual install: pier extension install");
+  }
+
+  stdout("");
+  stdout("Extension settings:");
+  stdout(
+    `  WebSocket URL: ws://${config.bridge.host}:${config.bridge.port}/terminal`
+  );
+  stdout(`  Token: ${config.bridge.token}`);
 }
 
 async function handleLegacyDevHosts(argv) {
@@ -514,20 +915,17 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   if (first === "extension") {
-    cmdExtension(args.slice(1));
+    await cmdExtension(args.slice(1));
     return;
   }
 
   if (first === "setup") {
-    await cmdSetup();
+    await cmdSetup(args.slice(1));
     return;
   }
 
   if (first === "version" || first === "--version" || first === "-v") {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, "..", "package.json"), "utf8")
-    );
-    stdout(pkg.version || "0.0.0");
+    stdout(getPierVersion());
     return;
   }
 
@@ -536,9 +934,12 @@ async function main(argv = process.argv.slice(2)) {
 
 module.exports = {
   cmdExtension,
+  ensurePortlessProxy,
   getExtensionPath,
+  getPortlessProxyPort,
   main,
   parseNameToHost,
+  resolvePortlessRunner,
   runPortlessApp
 };
 

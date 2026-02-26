@@ -12,7 +12,7 @@ This will:
 
 - register `myapp.localhost -> current cwd`
 - ensure the Pier bridge is running
-- run `portless myapp pnpm dev`
+- run Portless with the mapped app name
 
 ## Multiple Apps in Parallel
 
@@ -51,6 +51,8 @@ pier bridge logs
 
 ```bash
 pier doctor
+pier extension url
+pier extension install
 ```
 
 `pier doctor` prints bridge state, config paths, and extension connection values.

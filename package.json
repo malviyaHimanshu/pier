@@ -1,6 +1,6 @@
 {
   "name": "@malviyahimanshu/pier",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Portless-powered in-browser terminals for localhost apps with per-host workspace routing",
   "packageManager": "pnpm@10.20.0",
   "bin": {
@@ -13,7 +13,6 @@
   "files": [
     "bin",
     "cli",
-    "extension",
     "server",
     "packages/shared/dist",
     "packages/shared/package.json",
@@ -24,7 +23,7 @@
     "manifest.json",
     "README.md",
     "LICENSE",
-    "docs"
+    "!packages/*/dist/**/*.map"
   ],
   "engines": {
     "node": ">=20"
@@ -83,13 +82,8 @@
   },
   "type": "commonjs",
   "dependencies": {
-    "@xterm/addon-fit": "^0.11.0",
-    "@xterm/addon-unicode11": "^0.9.0",
-    "@xterm/addon-web-links": "^0.12.0",
-    "@xterm/addon-webgl": "^0.19.0",
-    "@xterm/xterm": "^6.0.0",
     "node-pty": "^1.1.0",
-    "preact": "^10.27.2",
+    "portless": "~0.4.2",
     "ws": "^8.19.0"
   },
   "devDependencies": {
@@ -99,11 +93,17 @@
     "@changesets/cli": "^2.29.7",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/preact": "^3.2.4",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.0.0",
     "esbuild": "^0.25.1",
     "eslint": "^9.21.0",
     "eslint-config-prettier": "^10.1.1",
     "globals": "^16.0.0",
     "jsdom": "^26.0.0",
+    "preact": "^10.27.2",
     "prettier": "^3.5.2",
     "sharp": "^0.34.3",
     "typescript": "^5.9.2",

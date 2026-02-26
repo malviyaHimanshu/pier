@@ -36,6 +36,27 @@ function latestTarball() {
   return path.join(root, candidates[0].name);
 }
 
+function latestExtensionZip() {
+  const dir = path.join(root, "artifacts", "chrome-web-store");
+  if (!fs.existsSync(dir)) {
+    return null;
+  }
+  const candidates = fs
+    .readdirSync(dir)
+    .filter(
+      (name) => name.startsWith("pier-extension-v") && name.endsWith(".zip")
+    )
+    .map((name) => ({
+      name,
+      mtimeMs: fs.statSync(path.join(dir, name)).mtimeMs
+    }))
+    .sort((a, b) => b.mtimeMs - a.mtimeMs);
+  if (candidates.length === 0) {
+    return null;
+  }
+  return path.join(dir, candidates[0].name);
+}
+
 function run(cmd, args, opts = {}) {
   execFileSync(cmd, args, {
     stdio: "pipe",
@@ -53,6 +74,17 @@ function runOutput(cmd, args, opts = {}) {
 }
 
 function main() {
+  run(process.execPath, [path.join(root, "scripts", "package-extension.js")], {
+    cwd: root
+  });
+
+  const extensionZip = latestExtensionZip();
+  if (!extensionZip || !fs.existsSync(`${extensionZip}.sha256`)) {
+    throw new Error(
+      "Missing extension release zip/checksum. Run `node scripts/package-extension.js` first."
+    );
+  }
+
   const tgz = latestTarball();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pier-pack-smoke-"));
   const homeDir = path.join(tmp, "home");
@@ -68,8 +100,11 @@ function main() {
 
   run(pierBin, ["--help"], { cwd: projDir, env });
   run(pierBin, ["version"], { cwd: projDir, env });
-  run(pierBin, ["extension", "path"], { cwd: projDir, env });
   run(pierBin, ["doctor"], { cwd: projDir, env });
+  run(pierBin, ["extension", "install", "--from", extensionZip], {
+    cwd: projDir,
+    env
+  });
 
   const extensionPath = runOutput(pierBin, ["extension", "path"], {
     cwd: projDir,
@@ -77,14 +112,15 @@ function main() {
   });
   const expected = [
     "manifest.json",
-    "extension/content.js",
-    "extension/options.js",
-    "extension/shared-runtime.js",
-    "extension/content.css",
-    "extension/options.css"
+    "content.js",
+    "options.js",
+    "shared-runtime.js",
+    "content.css",
+    "options.css",
+    "vendor/xterm.css"
   ];
   for (const rel of expected) {
-    const full = path.join(path.dirname(extensionPath), rel);
+    const full = path.join(extensionPath, rel);
     if (!fs.existsSync(full)) {
       throw new Error(`Missing packaged asset: ${rel}`);
     }

@@ -5,6 +5,7 @@ import {
   InlineCode
 } from "../_components/docs-page-shell";
 import { requireDocBySlug } from "@/lib/docs";
+import { EXTENSION_LINK } from "@/lib/constants";
 
 const doc = requireDocBySlug("troubleshooting");
 
@@ -23,7 +24,7 @@ export default function TroubleshootingDocsPage() {
         Symptom: <InlineCode>pier</InlineCode> fails to start an app command and
         mentions portless.
       </p>
-      <CommandBlock>{"npm install -g portless"}</CommandBlock>
+      <CommandBlock>{"npm install -g @malviyahimanshu/pier"}</CommandBlock>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Bridge Unreachable in Extension
@@ -89,6 +90,28 @@ export default function TroubleshootingDocsPage() {
         <li>Check extension is enabled</li>
         <li>Reload the page after updating extension settings</li>
       </ul>
+      <p className="text-neutral-600 leading-relaxed">
+        Install/reinstall from Chrome Web Store if needed:{" "}
+        <a
+          href={EXTENSION_LINK}
+          className="underline underline-offset-2"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {EXTENSION_LINK}
+        </a>
+      </p>
+
+      <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        Manual Extension Bundle Install Fails
+      </h2>
+      <CommandBlock>{"pier extension install"}</CommandBlock>
+      <p className="text-neutral-600 leading-relaxed">
+        If you have a local ZIP + checksum:
+      </p>
+      <CommandBlock>
+        {"pier extension install --from /path/to/pier-extension-v<version>.zip"}
+      </CommandBlock>
     </DocsPageShell>
   );
 }

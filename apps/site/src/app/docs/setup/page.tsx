@@ -5,6 +5,7 @@ import {
   InlineCode
 } from "../_components/docs-page-shell";
 import { requireDocBySlug } from "@/lib/docs";
+import { EXTENSION_LINK } from "@/lib/constants";
 
 const doc = requireDocBySlug("setup");
 
@@ -19,9 +20,7 @@ export default function SetupDocsPage() {
       <h2 className="text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Install (Published Package)
       </h2>
-      <CommandBlock>
-        {"npm install -g portless @malviyahimanshu/pier"}
-      </CommandBlock>
+      <CommandBlock>{"npm install -g @malviyahimanshu/pier"}</CommandBlock>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Initialize Pier
@@ -30,17 +29,36 @@ export default function SetupDocsPage() {
       <p className="text-neutral-600 leading-relaxed">
         <InlineCode>pier setup</InlineCode> creates{" "}
         <InlineCode>~/.pier/config.json</InlineCode> if missing, starts the
-        local bridge server, and prints the WebSocket URL and token for the
-        extension.
+        local bridge server, starts the Portless proxy, and prints the WebSocket
+        URL and token for the extension.
+      </p>
+      <p className="text-neutral-600 leading-relaxed">
+        Use <InlineCode>pier setup --manual-extension</InlineCode> if you want
+        setup to cache the unpacked extension bundle for manual loading.
       </p>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
-        Load the Chrome/Chromium Extension
+        Install Extension (Recommended)
       </h2>
+      <p className="text-neutral-600 leading-relaxed">
+        Install Pier from the Chrome Web Store:{" "}
+        <a
+          href={EXTENSION_LINK}
+          className="underline underline-offset-2"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {EXTENSION_LINK}
+        </a>
+      </p>
+
+      <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
+        Manual Unpacked Extension (Optional)
+      </h2>
+      <CommandBlock>
+        {"pier extension install\npier extension path"}
+      </CommandBlock>
       <ol className="list-decimal pl-5 space-y-2 text-neutral-600">
-        <li>
-          Run <InlineCode>pier extension path</InlineCode>
-        </li>
         <li>
           Open <InlineCode>chrome://extensions</InlineCode>
         </li>

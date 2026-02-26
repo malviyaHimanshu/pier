@@ -3,7 +3,7 @@
 ## Install (Published Package)
 
 ```bash
-npm install -g portless @malviyahimanshu/pier
+npm install -g @malviyahimanshu/pier
 ```
 
 ## Initialize Pier
@@ -16,13 +16,27 @@ pier setup
 
 - create `~/.pier/config.json` (if missing)
 - start the local bridge server
+- start the Portless proxy in background
 - print the WebSocket URL and token for the extension
 
-## Load the Chrome/Chromium Extension
+Optional flags:
+
+- `pier setup --https` to start Portless proxy in HTTPS mode
+- `pier setup --manual-extension` to also download/cache the unpacked extension bundle
+
+## Install the Extension (Recommended)
+
+Install from Chrome Web Store:
+
+- https://chromewebstore.google.com/detail/pier/gfhbagnaafeefbkjcocmpnepfggbbdpj
+- or print the link with `pier extension url`
+
+## Manual Unpacked Extension (Optional)
 
 1. Run:
 
 ```bash
+pier extension install
 pier extension path
 ```
 

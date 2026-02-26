@@ -67,7 +67,9 @@ export default function UsageDocsPage() {
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
         Diagnostics
       </h2>
-      <CommandBlock>{"pier doctor"}</CommandBlock>
+      <CommandBlock>
+        {"pier doctor\npier extension url\npier extension install"}
+      </CommandBlock>
       <p className="text-neutral-600 leading-relaxed">
         <InlineCode>pier doctor</InlineCode> prints bridge state, config paths,
         and extension connection values.

@@ -8,6 +8,7 @@ const OUTDIR = path.join(ROOT, "extension");
 const EXT_SRC = path.join(ROOT, "packages", "extension-src", "src");
 const PUBLIC_DIR = path.join(EXT_SRC, "public");
 const watchMode = process.argv.includes("--watch");
+const minifyOutput = !watchMode;
 
 const builds = [
   {
@@ -17,7 +18,7 @@ const builds = [
     format: "iife",
     platform: "browser",
     target: "chrome114",
-    minify: false,
+    minify: minifyOutput,
     legalComments: "none"
   },
   {
@@ -27,7 +28,7 @@ const builds = [
     format: "iife",
     platform: "browser",
     target: "chrome114",
-    minify: false,
+    minify: minifyOutput,
     legalComments: "none",
     jsx: "automatic",
     jsxImportSource: "preact"
@@ -39,7 +40,7 @@ const builds = [
     format: "iife",
     platform: "browser",
     target: "chrome114",
-    minify: false,
+    minify: minifyOutput,
     legalComments: "none",
     jsx: "automatic",
     jsxImportSource: "preact"

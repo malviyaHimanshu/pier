@@ -5,7 +5,6 @@
 - Node.js 20+
 - pnpm 10+
 - Chrome/Chromium for extension testing
-- `portless` installed globally for end-to-end workflows
 
 ## Source of Truth vs Generated Output
 

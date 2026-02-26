@@ -53,15 +53,13 @@ export default function ReleaseDocsPage() {
         </li>
         <li>
           <InlineCode>
-            {
-              "./artifacts/chrome-web-store/pier-extension-chrome-web-store-v<version>.zip"
-            }
+            {"./artifacts/chrome-web-store/pier-extension-v<version>.zip"}
           </InlineCode>
         </li>
         <li>
           <InlineCode>
             {
-              "./artifacts/chrome-web-store/pier-extension-chrome-web-store-v<version>.zip.sha256"
+              "./artifacts/chrome-web-store/pier-extension-v<version>.zip.sha256"
             }
           </InlineCode>
         </li>

@@ -23,7 +23,6 @@ export default function ContributingDocsPage() {
         <li>Node.js 20+</li>
         <li>pnpm 10+</li>
         <li>Chrome/Chromium for extension testing</li>
-        <li>portless installed globally for end-to-end workflows</li>
       </ul>
 
       <h2 className="mt-10 text-2xl sm:text-3xl font-medium text-neutral-900 leading-tight">
