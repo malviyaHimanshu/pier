@@ -1,6 +1,6 @@
 {
   "name": "@malviyahimanshu/pier",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Portless-powered in-browser terminals for localhost apps with per-host workspace routing",
   "packageManager": "pnpm@10.20.0",
   "bin": {

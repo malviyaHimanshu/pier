@@ -7,6 +7,7 @@ import {
   type DocSlug
 } from "@/lib/docs";
 import { cn } from "@/lib/utils";
+import { GITHUB_LINK } from "@/lib/constants";
 
 export function CommandBlock({ children }: { children: string }) {
   return (
@@ -153,7 +154,7 @@ export function DocsPageShell({
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <a
-              href="https://github.com/malviyahimanshu/pier"
+              href={GITHUB_LINK}
               className="text-sm text-neutral-400 hover:text-neutral-500 font-medium transition-colors"
             >
               GitHub
@@ -176,42 +177,6 @@ export function DocsPageShell({
           </div>
         </div>
       </footer>
-      {/* 
-      <footer className="py-8 sm:py-10 px-4 sm:px-6 bg-emerald-950 border-t border-emerald-900/60">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Image
-              src="/logo.png"
-              alt=""
-              height={100}
-              width={100}
-              className="h-4 w-auto object-contain"
-            />
-            <span className="text-white/70 text-sm font-medium">Pier</span>
-          </div>
-          <div className="flex items-center gap-4 sm:gap-6">
-            <a
-              href="https://github.com/malviyahimanshu/pier"
-              className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
-            >
-              GitHub
-            </a>
-            <Link
-              href="/docs"
-              className="text-sm text-white/60 font-medium transition-colors"
-            >
-              Docs
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
-            >
-              Privacy Policy
-            </Link>
-            <span className="text-white/20 text-sm font-medium">ISC License</span>
-          </div>
-        </div>
-      </footer> */}
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { EXTENSION_LINK, GITHUB_LINK } from "@/lib/constants";
 import { geistMono } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -48,7 +49,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="#"
+                href={EXTENSION_LINK}
                 className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
               >
                 <Image
@@ -61,7 +62,7 @@ export default function Home() {
                 Download for Chrome
               </a>
               <a
-                href="https://github.com/malviyahimanshu/pier"
+                href={GITHUB_LINK}
                 className="text-white text-sm font-medium px-5 py-2.5 rounded-full border border-white/40 opacity-80 hover:opacity-100 transition-all flex items-center gap-2"
               >
                 <Image
@@ -405,18 +406,9 @@ export default function Home() {
             ))}
           </div>
 
-          {/* <div className="mt-10 flex items-center gap-3">
-            <a
-              href="https://github.com/malviyahimanshu/pier"
-              className="bg-white text-emerald-950 hover:bg-white/90 text-sm font-medium px-5 py-2.5 rounded-full transition-colors"
-            >
-              View on GitHub
-            </a>
-          </div> */}
-
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <a
-              href="#"
+              href={EXTENSION_LINK}
               className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
             >
               <Image
@@ -429,7 +421,7 @@ export default function Home() {
               Download for Chrome
             </a>
             <a
-              href="https://github.com/malviyahimanshu/pier"
+              href={GITHUB_LINK}
               className="text-white text-sm font-medium px-5 py-2.5 rounded-full border border-white/40 opacity-80 hover:opacity-100 transition-all flex items-center gap-2"
             >
               <Image
@@ -464,7 +456,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <a
-              href="https://github.com/malviyahimanshu/pier"
+              href={GITHUB_LINK}
               className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
             >
               GitHub
