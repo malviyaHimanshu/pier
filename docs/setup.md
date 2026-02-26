@@ -45,5 +45,5 @@ Use **Test Bridge** before opening localhost pages.
 1. `pier bridge status` should report `running`
 2. Start an app: `pier myapp pnpm dev`
 3. Open `http://myapp.localhost:<port>`
-4. Press `Cmd+\`` / `Ctrl+\``
+4. Press `Ctrl+\`` on macOS or `Ctrl+\`` on Windows/Linux
 5. Confirm the terminal opens in the correct project directory

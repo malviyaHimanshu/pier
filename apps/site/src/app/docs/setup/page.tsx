@@ -55,7 +55,9 @@ export default function SetupDocsPage() {
         <li>
           Start an app with <InlineCode>pier myapp pnpm dev</InlineCode>
         </li>
-        <li>Open your localhost URL and press Cmd+` / Ctrl+`</li>
+        <li>
+          Open your localhost URL and press Ctrl+` on macOS or Ctrl+` on Windows/Linux
+        </li>
         <li>Confirm terminal opens in the mapped project directory</li>
       </ol>
     </DocsPageShell>

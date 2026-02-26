@@ -174,7 +174,7 @@ export default function Home() {
                   </code>{" "}
                   subdomain. Press{" "}
                   <code className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">
-                    Cmd+`
+                    Ctrl+`
                   </code>{" "}
                   to toggle a full PTY terminal right inside your app — no
                   window switching needed.
@@ -275,7 +275,7 @@ export default function Home() {
               {
                 step: "05",
                 title: "Terminal renders inside your app",
-                desc: "An xterm.js panel appears in your page. Press Cmd+` to toggle it at any time.",
+                desc: "An xterm.js panel appears in your page. Press Ctrl+` to toggle it at any time.",
               },
               {
                 step: "06",

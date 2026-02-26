@@ -86,7 +86,7 @@ pier myapp pnpm dev
 
 Open the `portless` URL (for example `http://myapp.localhost:1355`) and press:
 
-- `Cmd+\`` on macOS
+- `Ctrl+\`` on macOS
 - `Ctrl+\`` on Windows/Linux
 
 ## Daily Commands
