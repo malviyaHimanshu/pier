@@ -67,7 +67,8 @@ export default function PrivacyPage() {
                 account creation. The CLI, bridge, and extension store
                 configuration data on your machine (such as host-to-workspace
                 mappings, bridge settings, and local session metadata) so Pier
-                can route terminals correctly.
+                can route terminals correctly. On production website domains,
+                Pier also collects website pageview analytics with PostHog.
               </p>
             </section>
 
@@ -79,6 +80,20 @@ export default function PrivacyPage() {
                 Stored local data is used only to provide product functionality:
                 starting the local bridge, authenticating local requests, and
                 opening terminal sessions in the mapped project directory.
+                Website analytics data is used to understand documentation and
+                landing-page usage trends.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-lg font-medium text-neutral-900">
+                Website Analytics (PostHog)
+              </h2>
+              <p className="mt-3 text-sm sm:text-base font-medium text-neutral-500 leading-relaxed">
+                Pier website analytics uses PostHog and is limited to pageview
+                events. Autocapture, session recording, and person profiles are
+                disabled. Analytics is enabled only on approved production
+                hostnames.
               </p>
             </section>
 
@@ -87,10 +102,11 @@ export default function PrivacyPage() {
                 Data Sharing
               </h2>
               <p className="mt-3 text-sm sm:text-base font-medium text-neutral-500 leading-relaxed">
-                Pier does not send terminal output, workspace paths, or bridge
-                tokens to a Pier cloud service. If you install from third-party
-                platforms such as GitHub or the Chrome Web Store, those
-                services may collect their own usage data under their own
+                PostHog processes website analytics events for Pier. Pier does
+                not send terminal output, workspace paths, bridge tokens, or
+                CLI/extension runtime data to PostHog. If you install from
+                third-party platforms such as GitHub or the Chrome Web Store,
+                those services may collect their own usage data under their own
                 policies.
               </p>
             </section>

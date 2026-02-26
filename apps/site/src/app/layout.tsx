@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { googleSansCode, inter } from "@/lib/fonts";
+import { PostHogProvider } from "@/lib/posthog-client";
+import { PostHogPageview } from "@/lib/posthog-pageview";
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +24,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${googleSansCode.variable} antialiased`}
       >
-        {children}
+        <PostHogProvider>
+          <Suspense fallback={null}>
+            <PostHogPageview />
+          </Suspense>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   );
