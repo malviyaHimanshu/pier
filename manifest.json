@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Pier",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Open a real terminal in localhost pages with Ctrl+`.",
   "minimum_chrome_version": "114",
   "permissions": ["storage"],

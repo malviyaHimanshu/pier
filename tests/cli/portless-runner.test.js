@@ -63,6 +63,15 @@ describe("portless runner", () => {
     expect(runner.scriptPath).toBe(scriptPath);
   });
 
+  it("resolves bundled runtime even when PATH lookup is unavailable", () => {
+    delete process.env.PIER_PORTLESS_BIN;
+    process.env.PATH = "";
+    const runner = resolvePortlessRunner();
+    expect(runner.source).toBe("bundled");
+    expect(runner.mode).toBe("node-script");
+    expect(path.basename(runner.scriptPath)).toBe("cli.js");
+  });
+
   it("ensures proxy and reports already-running output", () => {
     const scriptPath = writeFakePortlessScript(
       [

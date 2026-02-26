@@ -366,17 +366,41 @@ function resolvePortlessRunner() {
     };
   }
 
-  try {
-    const bundled = require.resolve("portless/dist/cli.js");
-    if (bundled && fs.existsSync(bundled)) {
+  const bundledCandidates = [
+    // Published package layout: <pkg>/packages/cli-core/dist -> <pkg>/node_modules/portless/dist/cli.js
+    path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "node_modules",
+      "portless",
+      "dist",
+      "cli.js"
+    ),
+    // Repository source layout: <repo>/packages/cli-core/src -> <repo>/node_modules/portless/dist/cli.js
+    path.resolve(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "node_modules",
+      "portless",
+      "dist",
+      "cli.js"
+    ),
+    // Last-resort current working directory lookup.
+    path.resolve(process.cwd(), "node_modules", "portless", "dist", "cli.js")
+  ];
+  for (const bundled of bundledCandidates) {
+    if (fs.existsSync(bundled)) {
       return {
         source: "bundled",
         mode: "node-script",
         scriptPath: bundled
       };
     }
-  } catch {
-    // fallback to PATH
   }
 
   const fromPath = checkCommandAvailable("portless", ["--version"]);
