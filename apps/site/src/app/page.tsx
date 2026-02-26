@@ -46,7 +46,7 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <a
-                href="https://github.com/malviyahimanshu/pier"
+                href="#"
                 className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
               >
                 <Image 
@@ -285,7 +285,7 @@ export default function Home() {
             ].map(({ step, title, desc }) => (
               <div
                 key={step}
-                className="flex gap-4 p-6 rounded-2xl border border-neutral-200 bg-neutral-50"
+                className="flex gap-4 p-6 rounded-2xl border border-neutral-200"
               >
                 <span className="text-sm font-semibold text-emerald-500 mt-0.5 shrink-0 tabular-nums">
                   {step}
@@ -303,7 +303,7 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="py-20 sm:py-32 px-4 sm:px-6 bg-neutral-50">
+      {/* <section className="py-20 sm:py-32 px-4 sm:px-6 bg-neutral-50">
         <div className="max-w-4xl mx-auto">
           <p className="text-xs font-medium text-emerald-600 uppercase tracking-widest">
             Features
@@ -351,7 +351,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Install / CTA */}
       <section className="py-20 sm:py-32 px-4 sm:px-6 bg-emerald-950">
@@ -414,7 +414,7 @@ export default function Home() {
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <a
-              href="https://github.com/malviyahimanshu/pier"
+              href="#"
               className="bg-white text-emerald-950 text-sm font-medium px-5 py-2.5 rounded-full hover:bg-white/90 transition-colors flex items-center gap-2"
             >
               <Image 
@@ -456,9 +456,9 @@ export default function Home() {
               alt=""
               height={100}
               width={100}
-              className="h-4 w-auto object-contain"
+              className="h-4.5 w-auto object-contain"
             />
-            <span className="text-white/70 text-sm font-medium">Pier</span>
+            <span className="text-white/70 font-medium">Pier</span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <a
@@ -467,6 +467,12 @@ export default function Home() {
             >
               GitHub
             </a>
+            <Link
+              href="/privacy"
+              className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
+            >
+              Privacy Policy
+            </Link>
             <span className="text-white/20 text-sm font-medium">
               ISC License
             </span>
