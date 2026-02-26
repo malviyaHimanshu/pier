@@ -94,6 +94,59 @@ describe("portless runner", () => {
     expect(result.runner.source).toBe("env");
   });
 
+  it("restarts idle already-running proxy when requested", () => {
+    const stateDir = makeTmpDir();
+    const statePath = path.join(stateDir, "state.json");
+    const scriptPath = writeFakePortlessScript(
+      [
+        "const fs = require('fs');",
+        `const statePath = ${JSON.stringify(statePath)};`,
+        "const args = process.argv.slice(2);",
+        "function load() {",
+        "  try {",
+        "    return JSON.parse(fs.readFileSync(statePath, 'utf8'));",
+        "  } catch {",
+        "    return { starts: 0 };",
+        "  }",
+        "}",
+        "function save(state) {",
+        "  fs.writeFileSync(statePath, JSON.stringify(state));",
+        "}",
+        "if (args[0] === '--version') {",
+        "  console.log('0.0.0-test');",
+        "  process.exit(0);",
+        "}",
+        "if (args[0] === 'list') {",
+        "  console.log('No active routes.');",
+        "  process.exit(0);",
+        "}",
+        "if (args[0] === 'proxy' && args[1] === 'stop') {",
+        "  process.exit(0);",
+        "}",
+        "if (args[0] === 'proxy' && args[1] === 'start') {",
+        "  const state = load();",
+        "  state.starts = Number(state.starts || 0) + 1;",
+        "  save(state);",
+        "  if (state.starts === 1) {",
+        "    console.log('Proxy is already running on port 1355.');",
+        "  } else {",
+        "    console.log('HTTP proxy started on port 1355');",
+        "  }",
+        "  process.exit(0);",
+        "}",
+        "process.exit(1);"
+      ].join("\n")
+    );
+
+    process.env.PIER_PORTLESS_BIN = scriptPath;
+    const result = ensurePortlessProxy({ restartIfIdle: true });
+    const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
+
+    expect(result.alreadyRunning).toBe(true);
+    expect(result.restarted).toBe(true);
+    expect(state.starts).toBe(2);
+  });
+
   it("uses PORTLESS_PORT when provided", () => {
     process.env.PORTLESS_PORT = "17000";
     expect(getPortlessProxyPort()).toBe(17000);

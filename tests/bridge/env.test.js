@@ -14,5 +14,6 @@ describe("bridge env", () => {
     expect(env.host).toBe("127.0.0.1");
     expect(env.port).toBe(4570);
     expect(env.token).toBe("change-me");
+    expect(env.strictToken).toBe(false);
   });
 });

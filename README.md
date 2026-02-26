@@ -89,7 +89,7 @@ flowchart LR
 
 1. `pier <name> <cmd...>` wraps `portless` and records `<name>.localhost -> cwd`
 2. Pier ensures the local bridge is running
-3. Extension connects to the bridge with token auth
+3. Extension connects to the bridge (legacy token-compat by default, strict mode optional)
 4. Bridge resolves the page hostname to a workspace path
 5. Terminal session is created or reused in that workspace
 
@@ -121,7 +121,7 @@ pier setup [--https] [--manual-extension]
 ## Security
 
 - Bridge binds to localhost by default (`127.0.0.1`)
-- WebSocket requires token authentication
+- WebSocket token auth can be enforced with `PIER_STRICT_TOKEN=1`
 - Extension only activates on localhost-style pages
 - Bridge upgrade checks allow only localhost + extension origins
 

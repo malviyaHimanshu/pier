@@ -17,7 +17,7 @@ pier setup
 - create `~/.pier/config.json` (if missing)
 - start the local bridge server
 - start the Portless proxy in background
-- print the WebSocket URL and token for the extension
+- print the WebSocket URL and token for the extension (strict mode)
 
 Optional flags:
 
@@ -50,9 +50,19 @@ pier extension path
 Open **Pier Settings** and paste:
 
 - WebSocket URL
-- Access Token
+- Access Token (only required when strict token mode is enabled)
 
 Use **Test Bridge** before opening localhost pages.
+
+## Optional: Strict Token Auth
+
+By default, Pier accepts the legacy default extension token (`change-me`) for smoother first-run DX.
+
+To require an exact token match:
+
+```bash
+PIER_STRICT_TOKEN=1 pier setup
+```
 
 ## First-Run Validation
 

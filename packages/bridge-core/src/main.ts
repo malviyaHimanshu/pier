@@ -14,11 +14,13 @@ const {
   getRequestedPageContext,
   isAllowedOrigin
 } = require("./security/origin-policy");
+const { evaluateTokenAuth } = require("./security/auth-policy");
 
 const ENV = readBridgeEnv(process.env);
 const HOST = ENV.host;
 const PORT = ENV.port;
 const TOKEN = ENV.token;
+const STRICT_TOKEN = ENV.strictToken;
 const DEFAULT_CWD = ENV.defaultCwd;
 const SHELL = ENV.shell;
 const TERM_PROGRAM = ENV.termProgram;
@@ -62,6 +64,12 @@ function ensurePtyHelperPermissions() {
 
 const SESSION_DETACH_TIMEOUT_MS = ENV.sessionDetachTimeoutMs;
 const sessions = new Map();
+
+function setHealthCorsHeaders(res) {
+  res.setHeader("access-control-allow-origin", "*");
+  res.setHeader("access-control-allow-methods", "GET, OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type");
+}
 
 function sendJson(ws, payload) {
   if (ws.readyState !== 1) {
@@ -350,9 +358,27 @@ function attachClientToSession(sessionRecord, ws, cols, rows, reused) {
 }
 
 const server = http.createServer((req, res) => {
+  if (req.url === "/health" && req.method === "OPTIONS") {
+    setHealthCorsHeaders(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.url === "/health") {
+    setHealthCorsHeaders(res);
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, host: HOST, port: PORT }));
+    res.end(
+      JSON.stringify({
+        ok: true,
+        host: HOST,
+        port: PORT,
+        auth: {
+          strictToken: STRICT_TOKEN,
+          acceptsLegacyDefault: !STRICT_TOKEN
+        }
+      })
+    );
     return;
   }
 
@@ -382,10 +408,26 @@ server.on("upgrade", (request, socket, head) => {
   }
 
   const incomingToken = parsed.searchParams.get("token") || "";
-  if (!incomingToken || incomingToken !== TOKEN) {
+  const tokenCheck = evaluateTokenAuth({
+    incomingToken,
+    configuredToken: TOKEN,
+    strictToken: STRICT_TOKEN
+  });
+  if (!tokenCheck.ok) {
+    const remote = request.socket.remoteAddress || "unknown";
+    const origin = String(request.headers.origin || "");
+    console.warn(
+      `[pier] rejected websocket auth (${remote}) origin=${origin || "-"} strict=${STRICT_TOKEN ? "1" : "0"}`
+    );
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();
     return;
+  }
+  if (tokenCheck.mode === "legacy-default" && TOKEN !== "change-me") {
+    const remote = request.socket.remoteAddress || "unknown";
+    console.warn(
+      `[pier] accepted legacy token compatibility mode (${remote}). Set PIER_STRICT_TOKEN=1 to disable this.`
+    );
   }
 
   const origin = String(request.headers.origin || "");

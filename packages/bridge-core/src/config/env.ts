@@ -1,3 +1,5 @@
+const { toBool } = require("../security/auth-policy");
+
 function toInt(value, fallback, min, max) {
   const num = Number.parseInt(String(value), 10);
   if (Number.isNaN(num)) {
@@ -10,6 +12,7 @@ function readBridgeEnv(env = process.env) {
   const host = env.PIER_HOST || "127.0.0.1";
   const port = Number(env.PIER_PORT || "4570");
   const token = env.PIER_TOKEN || "change-me";
+  const strictToken = toBool(env.PIER_STRICT_TOKEN, false);
   const defaultCwd = env.PIER_CWD || process.cwd();
   const shell =
     env.PIER_SHELL ||
@@ -29,6 +32,7 @@ function readBridgeEnv(env = process.env) {
     host,
     port,
     token,
+    strictToken,
     defaultCwd,
     shell,
     termProgram,

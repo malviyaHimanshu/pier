@@ -1,4 +1,5 @@
 const fs = require("fs");
+const os = require("os");
 const path = require("path");
 const { spawn, spawnSync } = require("child_process");
 
@@ -317,6 +318,22 @@ function getPortlessProxyPort() {
   return value;
 }
 
+function getPortlessStateDir(proxyPort = getPortlessProxyPort()) {
+  const override = String(process.env.PORTLESS_STATE_DIR || "").trim();
+  if (override) {
+    return path.resolve(override);
+  }
+  return proxyPort < 1024 ? "/tmp/portless" : path.join(os.homedir(), ".portless");
+}
+
+function isPortlessTlsEnabled(proxyPort = getPortlessProxyPort()) {
+  try {
+    return fs.existsSync(path.join(getPortlessStateDir(proxyPort), "proxy.tls"));
+  } catch {
+    return false;
+  }
+}
+
 function isLikelyFilePath(value) {
   return (
     value.includes(path.sep) ||
@@ -492,7 +509,44 @@ function runPortlessCommandSync(args = [], options: any = {}) {
   };
 }
 
-function ensurePortlessProxy({ https = false } = {}) {
+function hasActivePortlessRoutes(runner) {
+  const listResult = runPortlessCommandSync(["list"], {
+    runner,
+    timeoutMs: 4000
+  });
+  if (!listResult.ok) {
+    return null;
+  }
+  const output = [listResult.stdout, listResult.stderr].filter(Boolean).join("\n");
+  return !/no active routes/i.test(output);
+}
+
+function restartPortlessProxy({
+  runner,
+  https = false
+}: {
+  runner: any;
+  https?: boolean;
+}) {
+  runPortlessCommandSync(["proxy", "stop"], {
+    runner,
+    timeoutMs: 15000
+  });
+
+  const startArgs = ["proxy", "start"];
+  if (https) {
+    startArgs.push("--https");
+  }
+  return runPortlessCommandSync(startArgs, {
+    runner,
+    timeoutMs: 45000
+  });
+}
+
+function ensurePortlessProxy({
+  https = false,
+  restartIfIdle = false
+} = {}) {
   const args = ["proxy", "start"];
   if (https) {
     args.push("--https");
@@ -504,9 +558,31 @@ function ensurePortlessProxy({ https = false } = {}) {
     );
   }
   const merged = [result.stdout, result.stderr].filter(Boolean).join("\n");
+  const alreadyRunning = /already running/i.test(merged);
+  let restarted = false;
+  let warning = "";
+
+  if (alreadyRunning && restartIfIdle) {
+    const activeRoutes = hasActivePortlessRoutes(result.runner);
+    if (activeRoutes === false) {
+      const restartResult = restartPortlessProxy({
+        runner: result.runner,
+        https: https || isPortlessTlsEnabled(getPortlessProxyPort())
+      });
+
+      if (restartResult.ok) {
+        restarted = true;
+      } else {
+        warning = `Failed to recycle idle proxy automatically: ${restartResult.error || "unknown error"}`;
+      }
+    }
+  }
+
   return {
     runner: result.runner,
-    alreadyRunning: /already running/i.test(merged),
+    alreadyRunning,
+    restarted,
+    warning,
     output: merged
   };
 }
@@ -649,7 +725,10 @@ async function cmdSetup(argv = []) {
   const setupOptions = parseSetupArgs(argv);
   const { config, created } = ensureConfig();
   const bridge = await startBridge(config);
-  const proxy = ensurePortlessProxy({ https: setupOptions.https });
+  const proxy = ensurePortlessProxy({
+    https: setupOptions.https,
+    restartIfIdle: true
+  });
   let extensionResult = null;
   let extensionError = null;
 
@@ -675,10 +754,15 @@ async function cmdSetup(argv = []) {
       : `Bridge: started (pid ${bridge.pid})`
   );
   stdout(
-    proxy.alreadyRunning
+    proxy.restarted
+      ? `Portless proxy: restarted on port ${getPortlessProxyPort()}`
+      : proxy.alreadyRunning
       ? `Portless proxy: already running on port ${getPortlessProxyPort()}`
       : `Portless proxy: started on port ${getPortlessProxyPort()}`
   );
+  if (proxy.warning) {
+    warn(proxy.warning);
+  }
   if (!setupOptions.manualExtension) {
     stdout("Extension: use Chrome Web Store (recommended)");
   } else if (extensionResult && extensionResult.alreadyInstalled) {
@@ -756,6 +840,20 @@ async function runPortlessApp(
         `[pier] Bridge started on http://${config.bridge.host}:${config.bridge.port}/health`
       );
     }
+  }
+
+  let proxy = null;
+  try {
+    proxy = ensurePortlessProxy({ restartIfIdle: true });
+  } catch (error) {
+    fail(String(error.message || error));
+  }
+  if (proxy.restarted) {
+    stdout(
+      `[pier] Recycled idle Portless proxy on port ${getPortlessProxyPort()}`
+    );
+  } else if (proxy.warning) {
+    warn(proxy.warning);
   }
 
   stdout(`[pier] ${host} -> ${normalizedCwd}`);

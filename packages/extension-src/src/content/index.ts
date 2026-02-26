@@ -39,6 +39,8 @@ const WebglAddon = { WebglAddon: XtermWebglAddon };
   const PANEL_HEIGHT_DEFAULT_RATIO = 0.4;
   const PANEL_HEIGHT_MIN_PX = 220;
   const PANEL_HEIGHT_MAX_RATIO = 0.85;
+  const BRIDGE_DIAG_TIMEOUT_MS = 1200;
+  const FAILURE_LOG_DEDUPE_MS = 3000;
 
   const DEFAULT_SETTINGS = (PIER_SHARED &&
     PIER_SHARED.DEFAULT_TERMINAL_SETTINGS) || {
@@ -203,6 +205,8 @@ const WebglAddon = { WebglAddon: XtermWebglAddon };
   let terminalResizeObserver = null;
   let fontWatchInitialized = false;
   let activeSessionId = loadSessionId();
+  let lastFailureLog = "";
+  let lastFailureLogAt = 0;
 
   document.addEventListener("keydown", onGlobalKeydown, true);
   window.addEventListener("beforeunload", closeSocket);
@@ -1239,6 +1243,109 @@ const WebglAddon = { WebglAddon: XtermWebglAddon };
     };
   }
 
+  function dedupedFailureLog(message) {
+    if (!terminal) {
+      return;
+    }
+    const now = Date.now();
+    if (
+      message === lastFailureLog &&
+      now - lastFailureLogAt < FAILURE_LOG_DEDUPE_MS
+    ) {
+      return;
+    }
+    lastFailureLog = message;
+    lastFailureLogAt = now;
+    terminal.writeln(message);
+  }
+
+  function bridgeHealthUrlFromWsUrl(wsUrlValue) {
+    let wsUrl;
+    try {
+      wsUrl = new URL(wsUrlValue);
+    } catch {
+      return null;
+    }
+    wsUrl.protocol = wsUrl.protocol === "wss:" ? "https:" : "http:";
+    wsUrl.pathname = "/health";
+    wsUrl.search = "";
+    wsUrl.hash = "";
+    return wsUrl;
+  }
+
+  async function fetchBridgeHealth(wsUrlValue) {
+    const healthUrl = bridgeHealthUrlFromWsUrl(wsUrlValue);
+    if (!healthUrl) {
+      return { ok: false, reason: "invalid-url" };
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+    }, BRIDGE_DIAG_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(healthUrl.toString(), {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal
+      });
+      let payload = null;
+      try {
+        payload = await response.json();
+      } catch {
+        payload = null;
+      }
+      if (!response.ok) {
+        return {
+          ok: false,
+          reason: `status-${response.status}`,
+          healthUrl: healthUrl.toString(),
+          payload
+        };
+      }
+      return {
+        ok: true,
+        healthUrl: healthUrl.toString(),
+        payload
+      };
+    } catch {
+      return { ok: false, reason: "network", healthUrl: healthUrl.toString() };
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+
+  async function diagnoseHandshakeFailure(settings) {
+    const health = await fetchBridgeHealth(settings.wsUrl);
+    if (!health.ok) {
+      return {
+        status: "bridge-unreachable",
+        detail:
+          "Bridge unreachable. Run `pier setup` (or `pier bridge start`) and reload this page."
+      };
+    }
+
+    const strictToken = Boolean(
+      health.payload &&
+        health.payload.auth &&
+        health.payload.auth.strictToken === true
+    );
+    if (strictToken) {
+      return {
+        status: "token-mismatch",
+        detail:
+          "Bridge is running, but token auth failed. Run `pier setup` and copy the token into extension settings."
+      };
+    }
+
+    return {
+      status: "bridge-rejected",
+      detail:
+        "Bridge is running but rejected this WebSocket. Verify the WebSocket URL in extension settings."
+    };
+  }
+
   async function connect(preloadedSettings) {
     if (connecting || !terminal) {
       return;
@@ -1265,24 +1372,61 @@ const WebglAddon = { WebglAddon: XtermWebglAddon };
       }
 
       closeSocket();
-      socket = new WebSocket(wsUrl.toString());
+      const nextSocket = new WebSocket(wsUrl.toString());
+      socket = nextSocket;
+      let opened = false;
+      let handledEarlyFailure = false;
 
-      socket.addEventListener("open", () => {
+      async function handleEarlyFailure() {
+        if (handledEarlyFailure || opened || socket !== nextSocket) {
+          return;
+        }
+        handledEarlyFailure = true;
+        const diagnosis = await diagnoseHandshakeFailure(settings);
+        if (socket !== nextSocket) {
+          return;
+        }
+        setStatus("error", diagnosis.status);
+        dedupedFailureLog(`[pier] ${diagnosis.detail}`);
+      }
+
+      nextSocket.addEventListener("open", () => {
+        if (socket !== nextSocket) {
+          return;
+        }
+        opened = true;
         setStatus("connected");
       });
 
-      socket.addEventListener("message", (event) => {
+      nextSocket.addEventListener("message", (event) => {
+        if (socket !== nextSocket) {
+          return;
+        }
         handleServerMessage(event.data);
       });
 
-      socket.addEventListener("close", () => {
+      nextSocket.addEventListener("close", () => {
+        if (socket !== nextSocket) {
+          return;
+        }
+        if (!opened) {
+          void handleEarlyFailure();
+          return;
+        }
         setStatus("disconnected");
-        terminal.writeln("[pier] Disconnected.");
+        dedupedFailureLog("[pier] Disconnected.");
       });
 
-      socket.addEventListener("error", () => {
+      nextSocket.addEventListener("error", () => {
+        if (socket !== nextSocket) {
+          return;
+        }
+        if (!opened) {
+          void handleEarlyFailure();
+          return;
+        }
         setStatus("error", "websocket");
-        terminal.writeln("[pier] WebSocket error.");
+        dedupedFailureLog("[pier] WebSocket error.");
       });
     } catch (error) {
       setStatus("error", "connect failed");

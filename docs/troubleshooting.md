@@ -25,14 +25,19 @@ Checks:
 
 1. `pier bridge status`
 2. `pier doctor`
-3. Confirm extension WebSocket URL + token match `pier setup` / `pier doctor`
+3. Confirm extension WebSocket URL matches `pier setup` / `pier doctor`
 4. Use **Test Bridge** in extension settings
 
 ## Token Errors / Authentication Failures
 
-- Regenerate or re-read the token from `pier doctor`
-- Re-paste in extension settings
-- Reload localhost tabs after saving settings
+- If strict mode is enabled (`PIER_STRICT_TOKEN=1`), re-read token via `pier doctor` and paste it in extension settings
+- If strict mode is disabled (default), token mismatch should no longer block connection
+- Reload localhost tabs after any settings change
+
+If you see repeated `[pier] WebSocket error` / `[pier] Disconnected`, the latest extension build now prints a direct diagnosis:
+
+- bridge unreachable -> run `pier setup` / `pier bridge start`
+- auth mismatch in strict mode -> copy token from `pier setup` / `pier doctor`
 
 ## Terminal Opens in Wrong Directory
 
