@@ -1328,8 +1328,8 @@ const WebglAddon = { WebglAddon: XtermWebglAddon };
 
     const strictToken = Boolean(
       health.payload &&
-        health.payload.auth &&
-        health.payload.auth.strictToken === true
+      health.payload.auth &&
+      health.payload.auth.strictToken === true
     );
     if (strictToken) {
       return {

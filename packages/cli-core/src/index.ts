@@ -323,12 +323,16 @@ function getPortlessStateDir(proxyPort = getPortlessProxyPort()) {
   if (override) {
     return path.resolve(override);
   }
-  return proxyPort < 1024 ? "/tmp/portless" : path.join(os.homedir(), ".portless");
+  return proxyPort < 1024
+    ? "/tmp/portless"
+    : path.join(os.homedir(), ".portless");
 }
 
 function isPortlessTlsEnabled(proxyPort = getPortlessProxyPort()) {
   try {
-    return fs.existsSync(path.join(getPortlessStateDir(proxyPort), "proxy.tls"));
+    return fs.existsSync(
+      path.join(getPortlessStateDir(proxyPort), "proxy.tls")
+    );
   } catch {
     return false;
   }
@@ -517,7 +521,9 @@ function hasActivePortlessRoutes(runner) {
   if (!listResult.ok) {
     return null;
   }
-  const output = [listResult.stdout, listResult.stderr].filter(Boolean).join("\n");
+  const output = [listResult.stdout, listResult.stderr]
+    .filter(Boolean)
+    .join("\n");
   return !/no active routes/i.test(output);
 }
 
@@ -543,10 +549,7 @@ function restartPortlessProxy({
   });
 }
 
-function ensurePortlessProxy({
-  https = false,
-  restartIfIdle = false
-} = {}) {
+function ensurePortlessProxy({ https = false, restartIfIdle = false } = {}) {
   const args = ["proxy", "start"];
   if (https) {
     args.push("--https");
@@ -757,8 +760,8 @@ async function cmdSetup(argv = []) {
     proxy.restarted
       ? `Portless proxy: restarted on port ${getPortlessProxyPort()}`
       : proxy.alreadyRunning
-      ? `Portless proxy: already running on port ${getPortlessProxyPort()}`
-      : `Portless proxy: started on port ${getPortlessProxyPort()}`
+        ? `Portless proxy: already running on port ${getPortlessProxyPort()}`
+        : `Portless proxy: started on port ${getPortlessProxyPort()}`
   );
   if (proxy.warning) {
     warn(proxy.warning);

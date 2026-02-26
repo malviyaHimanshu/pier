@@ -1,5 +1,7 @@
 function toBool(value, fallback = false) {
-  const raw = String(value ?? "").trim().toLowerCase();
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
   if (!raw) {
     return fallback;
   }
