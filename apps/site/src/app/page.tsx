@@ -468,6 +468,12 @@ export default function Home() {
               GitHub
             </a>
             <Link
+              href="/docs"
+              className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
+            >
+              Docs
+            </Link>
+            <Link
               href="/privacy"
               className="text-sm text-white/30 hover:text-white/60 font-medium transition-colors"
             >
